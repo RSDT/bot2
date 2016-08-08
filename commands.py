@@ -1,10 +1,13 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater,  MessageHandler, Filters
 import tokens
-import logging
-import time
-import authenticator
-from pythonApi.RPApi.Base import Api as RPApi
-DeelgebiedUpdates, SWITCH_REMINDERS, BUG_REPORT, ErrorUpdates, SCOUTING_GROEP = range(4)
+import Updates
+from wrappers import void_no_crash, authenticate
+from CommandHandlerWithHelp import CommandHandlerWithHelp
+
+DeelgebiedUpdates, SWITCH_REMINDERS, BUG_REPORT,\
+ErrorUpdates, NieuwsUpdates, SCOUTING_GROEP,\
+PhotoUpdates, OpdrachtUpdates, HintUpdates\
+    = range(9)
 
 
 class MultipleConversationsError(Exception):
@@ -13,250 +16,6 @@ class MultipleConversationsError(Exception):
 
 class NotCancelledError(Exception):
     pass
-
-
-class Updates:
-    _instance = None
-    ALPHA, BRAVO, CHARLIE, DELTA, ECHO, FOXTROT, XRAY, PHOTOS, OPDRACHTEN, NIEUWS, ERROR = range(11)
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(Updates, cls).__new__(cls, *args)
-        return cls._instance
-
-    def __init__(self):
-        self.bot = None
-        self._A = set()
-        self._B = set()
-        self._C = set()
-        self._D = set()
-        self._E = set()
-        self._F = set()
-        self._X = set()
-        self._photos = set()
-        self._opdrachten = set()
-        self._nieuws = set()
-        self._error = set()
-        self._last_update = 0
-        self.lastA = None
-        self.lastB = None
-        self.lastC = None
-        self.lastD = None
-        self.lastE = None
-        self.lastF = None
-        self.lastX = None
-        self.lastPhoto = None
-        self.lastOpdracht = None
-        self.lastNieuws = None
-        self.lastStatus = None
-        self.lastMail = None
-        self.rp_api = RPApi.get_instance(tokens.rp_username, tokens.rp_pass)
-
-    @void_no_crash()
-    def update(self):
-        if self.has_bot() and (self._last_update is None or abs(time.time() - self._last_update) > 60):
-            pass
-            self.update_vos_last()
-            self.update_vos_status()
-            self.update_nieuws()
-            self.update_opdrachten()
-            self.update_hint()
-            self.update_foto_opdracht()
-            self.update_mail()
-            self.update_hunts()
-        else:
-            return
-
-    @void_no_crash()
-    def add_bot(self, bot):
-        self.bot = bot
-
-    def has_bot(self):
-        return self.bot is not None
-
-    @void_no_crash()
-    def add_chat(self, chat_id, update_type):
-        if update_type == self.ALPHA:
-            self._A.add(chat_id)
-        elif update_type == self.BRAVO:
-            self._B.add(chat_id)
-        elif update_type == self.CHARLIE:
-            self._C.add(chat_id)
-        elif update_type == self.DELTA:
-            self._D.add(chat_id)
-        elif update_type == self.ECHO:
-            self._E.add(chat_id)
-        elif update_type == self.FOXTROT:
-            self._F.add(chat_id)
-        elif update_type == self.XRAY:
-            self._X.add(chat_id)
-        elif update_type == self.PHOTOS:
-            self._photos.add(chat_id)
-        elif update_type == self.OPDRACHTEN:
-            self._opdrachten.add(chat_id)
-        elif update_type == self.NIEUWS:
-            self._nieuws.add(chat_id)
-        elif update_type == self.ERROR:
-            self._error.add(chat_id)
-
-    @void_no_crash()
-    def remove_chat(self, chat_id, update_type):
-        if update_type == self.ALPHA:
-            self._A.remove(chat_id)
-        elif update_type == self.BRAVO:
-            self._B.remove(chat_id)
-        elif update_type == self.CHARLIE:
-            self._C.remove(chat_id)
-        elif update_type == self.DELTA:
-            self._D.remove(chat_id)
-        elif update_type == self.ECHO:
-            self._E.remove(chat_id)
-        elif update_type == self.FOXTROT:
-            self._F.remove(chat_id)
-        elif update_type == self.XRAY:
-            self._X.remove(chat_id)
-        elif update_type == self.PHOTOS:
-            self._photos.remove(chat_id)
-        elif update_type == self.OPDRACHTEN:
-            self._opdrachten.remove(chat_id)
-        elif update_type == self.NIEUWS:
-            self._nieuws.remove(chat_id)
-        elif update_type == self.ERROR:
-            self._error.add(chat_id)
-
-    @void_no_crash()
-    def set_updates(self, chat_id, dg, status):
-        if status:
-            self.add_chat(chat_id, dg)
-        else:
-            self.remove_chat(chat_id, dg)
-
-    @void_no_crash()
-    def update_vos_last(self):
-        vosA = self.rp_api.vos('a')
-        vosB = self.rp_api.vos('b')
-        vosC = self.rp_api.vos('c')
-        vosD = self.rp_api.vos('d')
-        vosE = self.rp_api.vos('e')
-        vosF = self.rp_api.vos('f')
-        vosX = self.rp_api.vos('x')
-        if self.lastA != vosA and self.has_bot():
-            self.lastA = vosA
-            for chat_id in self._A:
-                if vosA['icon'] == '0':
-                    self.bot.sendMessage(chat_id," Heeft een hint locatie verstuurd voor Alpha.")
-                    self.bot.sendLocation(chat_id, lat=vosA['latitude'], lon=vosA['longitude'])
-                elif vosA['icon'] == '1':
-                    self.bot.sendMessage(chat_id," Heeft Vos Alpha gespot.")
-                    self.bot.sendLocation(chat_id, lat=vosA['latitude'], lon=vosA['longitude'])
-                elif vosA['icon'] == '2':
-                    self.bot.sendMessage(chat_id," Heeft Vos Alpha gehunt.")
-                    self.bot.sendLocation(chat_id, lat=vosA['latitude'], lon=vosA['longitude'])
-        if self.lastB != vosB and self.has_bot():
-            self.lastB = vosB
-            for chat_id in self._B:
-                if vosB['icon'] == '0':
-                    self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor Bravo.")
-                    self.bot.sendLocation(chat_id, lat=vosB['latitude'], lon=vosB['longitude'])
-                elif vosB['icon'] == '1':
-                    self.bot.sendMessage(chat_id, " Heeft Vos Bravo gespot.")
-                    self.bot.sendLocation(chat_id, lat=vosB['latitude'], lon=vosB['longitude'])
-                elif vosB['icon'] == '2':
-                    self.bot.sendMessage(chat_id, " Heeft Vos Bravo gehunt.")
-                    self.bot.sendLocation(chat_id, lat=vosB['latitude'], lon=vosB['longitude'])
-        if self.lastC != vosC and self.has_bot():
-            self.lastC = vosC
-            for chat_id in self._C:
-                if vosC['icon'] == '0':
-                    self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor Charlie.")
-                    self.bot.sendLocation(chat_id, lat=vosC['latitude'], lon=vosC['longitude'])
-                elif vosC['icon'] == '1':
-                    self.bot.sendMessage(chat_id, " Heeft Vos Charlie gespot.")
-                    self.bot.sendLocation(chat_id, lat=vosC['latitude'], lon=vosC['longitude'])
-                elif vosC['icon'] == '2':
-                    self.bot.sendMessage(chat_id, " Heeft Vos Charlie gehunt.")
-                    self.bot.sendLocation(chat_id, lat=vosC['latitude'], lon=vosC['longitude'])
-        if self.lastD != vosD and self.has_bot():
-            self.lastD = vosD
-            for chat_id in self._D:
-                if vosD['icon'] == '0':
-                    self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor Delta.")
-                    self.bot.sendLocation(chat_id, lat=vosD['latitude'], lon=vosD['longitude'])
-                elif vosD['icon'] == '1':
-                    self.bot.sendMessage(chat_id, " Heeft Vos Delta gespot.")
-                    self.bot.sendLocation(chat_id, lat=vosD['latitude'], lon=vosD['longitude'])
-                elif vosD['icon'] == '2':
-                    self.bot.sendMessage(chat_id, " Heeft Vos Delta gehunt.")
-                    self.bot.sendLocation(chat_id, lat=vosD['latitude'], lon=vosD['longitude'])
-        if self.lastE != vosE and self.has_bot():
-            self.lastE = vosE
-            for chat_id in self._E:
-                if vosE['icon'] == '0':
-                    self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor Echo.")
-                    self.bot.sendLocation(chat_id, lat=vosE['latitude'], lon=vosE['longitude'])
-                elif vosE['icon'] == '1':
-                    self.bot.sendMessage(chat_id, " Heeft Vos Echo gespot.")
-                    self.bot.sendLocation(chat_id, lat=vosE['latitude'], lon=vosE['longitude'])
-                elif vosE['icon'] == '2':
-                    self.bot.sendMessage(chat_id, " Heeft Vos Echo gehunt.")
-                    self.bot.sendLocation(chat_id, lat=vosE['latitude'], lon=vosE['longitude'])
-        if self.lastF != vosF and self.has_bot():
-            self.lastF = vosF
-            for chat_id in self._F:
-                if vosF['icon'] == '0':
-                    self.bot.sendMessage(chat_id," Heeft een hint locatie verstuurd voor Foxtrot.")
-                    self.bot.sendLocation(chat_id, lat=vosF['latitude'], lon=vosF['longitude'])
-                elif vosF['icon'] == '1':
-                    self.bot.sendMessage(chat_id," Heeft Vos Foxtrot gespot.")
-                    self.bot.sendLocation(chat_id, lat=vosF['latitude'], lon=vosF['longitude'])
-                elif vosF['icon'] == '2':
-                    self.bot.sendMessage(chat_id," Heeft Vos Foxtrot gehunt.")
-                    self.bot.sendLocation(chat_id, lat=vosF['latitude'], lon=vosF['longitude'])
-        if self.lastX != vosX and self.has_bot():
-            self.lastX = vosX
-            for chat_id in self._X:
-                if vosX['icon'] == '0':
-                    self.bot.sendMessage(chat_id," Heeft een hint locatie verstuurd voor X-Ray.")
-                    self.bot.sendLocation(chat_id, lat=vosX['latitude'], lon=vosX['longitude'])
-                elif vosX['icon'] == '1':
-                    self.bot.sendMessage(chat_id," Heeft Vos X-Ray gespot.")
-                    self.bot.sendLocation(chat_id, lat=vosX['latitude'], lon=vosX['longitude'])
-                elif vosX['icon'] == '2':
-                    self.bot.sendMessage(chat_id," Heeft Vos X-Ray gehunt.")
-                    self.bot.sendLocation(chat_id, lat=vosX['latitude'], lon=vosX['longitude'])
-
-    @void_no_crash()
-    def update_vos_status(self):
-        pass
-
-    @void_no_crash()
-    def update_nieuws(self):
-        pass
-
-    @void_no_crash()
-    def update_opdrachten(self):
-        pass
-
-    @void_no_crash()
-    def update_hint(self):
-        pass
-
-    @void_no_crash()
-    def update_foto_opdracht(self):
-        pass
-
-    @void_no_crash()
-    def update_mail(self):
-        pass
-
-    @void_no_crash()
-    def update_hunts(self):
-        pass
-
-    def error(self, e, func_name):
-        for chat_id in self._error:
-            if self.has_bot():
-                self.bot.sendMessage(chat_id, "er is een error opgetreden:\n" + str(func_name)+'\n'+str(e))
 
 
 class State:
@@ -272,11 +31,11 @@ class State:
         """
         if (str(user_id) + str(chat_id)) in State.states:
             raise MultipleConversationsError()
+        self._data = dict()
         self.chat_id = chat_id
         self.bot = bot
         self.user_id = user_id
         self.initiate_command = command
-        self._data = dict()
         self.canceled = False
         self._done = False
         self.path = []
@@ -284,9 +43,8 @@ class State:
         self.callback = callback_on_done
         State.states[str(user_id) + str(chat_id)] = self
 
-    @void_no_crash()
-    def __setattr__(self, key, value):
-        self._data[key] = value
+    def __getitem__(self, item):
+        return self._data[item]
 
     @void_no_crash()
     def __setitem__(self, key, value):
@@ -307,6 +65,9 @@ class State:
         self._done = True
         self.callback(self)
 
+    def get_state(self):
+        return self.state
+
     def __iter__(self):
         """
 
@@ -318,60 +79,234 @@ class State:
             yield key, self._data[key]
 
 
+def error_handler(bot, update, error):
+    bot.sendMessage(update.message.chat_id, "er is in deze chat een error opgetreden:\n" + str(error))
+    Updates.get_updates().error(error, "Updater")
+
+
 def create_updater():
     updater = Updater(token=tokens.bot_key)
     dp = updater.dispatcher
-    dp.add_handler(CommandHandler('cancel', cancel))
-    dp.add_handler(CommandHandler('deelgebieden', deelgebied_updates))
-    dp.add_error_handler(CommandHandler('error', error_updates))
-
+    dp.add_handler(CommandHandlerWithHelp('cancel', cancel, 'verlaat het huidige commando'))
+    dp.add_handler(CommandHandlerWithHelp('deelgebieden', deelgebied_updates, 'zet updates aan/uit voor vossen'))
+    dp.add_handler(CommandHandlerWithHelp('error', error_updates, 'zet updates aan/uit voor errors'))
+    dp.add_handler(CommandHandlerWithHelp('crash', crash, 'veroorzaak een test error'))
+    dp.add_handler(CommandHandlerWithHelp('help', help, 'laat de helptext zien.'))
+    dp.add_handler(CommandHandlerWithHelp('check_updates', check_updates, 'kijk welke updates aan staan in deze chat.'))
+    dp.add_handler(CommandHandlerWithHelp('start', start, 'start de bot'))
+    dp.add_handler(CommandHandlerWithHelp('nieuws', nieuws_updates, 'zet nieuws updates aan of uit'))
+    dp.add_handler(CommandHandlerWithHelp('test', test, 'test of de bot online is.'))
+    dp.add_handler(CommandHandlerWithHelp('opdrachten', opdrachten, 'zet opdracht updates aan of uit.'))
+    dp.add_handler(CommandHandlerWithHelp('hints', hint_updates, 'zet hint updates aan of uit.'))
     dp.add_handler(MessageHandler([Filters.text], conversation))
     return updater
 
 
-def void_no_crash():
-    def decorate(func):
-        def call(*args, **kwargs):
-            try:
-                  func(*args, **kwargs)
-            except Exception as e:
-                logging.error(str(e))
-                print(str(e))
-                updates = Updates()
-                updates.error(e, func.__name__)
-        return call
-    return decorate
+###############################################################################
+# command functions.                                                          #
+#                                                                             #
+###############################################################################
+def opdrachten(bot, update):
+    """
+
+            :param bot:
+            :param update:
+            :return:
+            """
+    chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    try:
+        State(bot, chat_id, user_id, OpdrachtUpdates, change_niews_updates)
+        bot.sendMessage(chat_id, "Moeten opdracht updates aan of uit staan?\naan/uit",
+                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+        Updates.get_updates().botan.track(update.message, 'opdracht_update')
+    except MultipleConversationsError:
+        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit commando niet starten.\n"
+                                 " type /cancel om het vorige comando te stoppen te stoppen",
+                        reply_to_message_id=update.message.message_id)
+        Updates.get_updates().botan.track(update.message, 'incorrect_opdracht_update')
 
 
 @void_no_crash()
-def authenticate():
-    def decorate(func):
-        def call(bot, update):
-            chat_id = update.message.chat_id
-            user_id = update.message.from_user.id
-            username = update.message.from_user.name
-            chat_name = update.message.chat.title or (
-                update.message.chat.first_name + ' ' + update.message.chat.last_name)
-            if authenticator.authenticate_chat(user_id, chat_id, tokens.SLEUTEL, username, chat_name):
-                func(bot, update)
-            else:
-                if type(chat_id) == int and chat_id > 0:
-                    bot.sendMessage(chat_id,
-                                    "je bent niet geverifierd! stuur een berichtje" +
-                                    " in een geverifiërde groepschat of naar de HB om je te verifiëren.")
-                else:
-                    bot.sendMessage(chat_id,
-                                    "Deze groepsapp is niet geverifeerd." +
-                                    " Stuur een berichtje naar de HB om deze groep te verifiëren.",
-                                    reply_to_message_id=update.message.message_id)
-
-        return call
-
-    return decorate
+def test(bot, update):
+    bot.sendMessage(update.message.chat_id, 'de bot is online')
+    Updates.get_updates().botan.track(update.message, 'test')
 
 
+@void_no_crash()
+@authenticate()
+def nieuws_updates(bot, update):
+    """
+
+        :param bot:
+        :param update:
+        :return:
+        """
+    chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    try:
+        State(bot, chat_id, user_id, NieuwsUpdates, change_niews_updates)
+        bot.sendMessage(chat_id, "Moeten nieuws updates aan of uit staan?\naan/uit",
+                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+        Updates.get_updates().botan.track(update.message, 'nieuws_update')
+    except MultipleConversationsError:
+        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit commando niet starten.\n"
+                                 " type /cancel om het vorige comando te stoppen te stoppen",
+                        reply_to_message_id=update.message.message_id)
+        Updates.get_updates().botan.track(update.message, 'incorrect_nieuws_update')
+
+
+@void_no_crash()
+@authenticate()
+def check_updates(bot, update):
+    message = 'updates staan aan voor:\n'
+    for u in Updates.get_updates().check_updates(update.message.chat_id):
+        message += u + '\n'
+    bot.sendMessage(update.message.chat_id, message)
+    Updates.get_updates().botan.track(update.message, 'check_update')
+
+
+start_message = \
+"""
+Welkom Bij de Telegrambot voor de jotihunt van de RP.\n
+Deze bot kun je gebruiken om informatie op te vragen tijdens de hunt.
+of om updates te ontvangen tijdens de hunt.
+Voor meer informatie : /help
+
+Deze bot kan alleen gebruikt worden door de RP en daarom moet je eerst geverifiërd worden.
+Dat kan je op 2 manieren doen:
+Je zet een berichtje in een groepsapp en dan wordt je automatisch geverifiërd.
+Of je stuurt hier een berichtje en vraagt of de homebase je wil verifieren.
+"""
+
+@void_no_crash()
+def start(bot, update):
+    bot.sendMessage(update.message.chat_id, start_message)
+    Updates.get_updates().botan.track(update.message, 'start')
+
+
+@void_no_crash()
+def help(bot, update):
+    message = start_message + "\n\n"
+    for commando in CommandHandlerWithHelp.helps:
+        message += '/' + commando + ' - ' + CommandHandlerWithHelp.helps[commando] + '\n'
+    bot.sendMessage(update.message.chat_id, message)
+    Updates.get_updates().botan.track(update.message, 'help')
+
+
+@void_no_crash()
+@authenticate()
+def crash(bot, update):
+    bot.sendMessage(update.message.chat_id, 'we gaan de bot proberen te crashen')
+    Updates.get_updates().botan.track(update.message, '/crash')
+    raise Exception("dit is een test")
+
+
+@void_no_crash()
+@authenticate()
+def cancel(bot, update):
+    """
+
+    :param bot:
+    :param update:
+    :return:
+    """
+    chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    h = str(user_id) + str(chat_id)
+    try:
+        state = State.states[h]
+        state.cancel()
+    except KeyError:
+        bot.sendMessage(chat_id, "Er is geen commando actief.", reply_to_message_id=update.message.message_id)
+        Updates.get_updates().botan.track(update.message, 'incorrect_cancel')
+    else:
+        bot.sendMessage(chat_id, "Het commando is gestopt.", reply_to_message_id=update.message.message_id)
+        Updates.get_updates().botan.track(update.message, 'cancel')
+
+
+@void_no_crash()
+@authenticate()
+def deelgebied_updates(bot, update):
+    """
+
+    :param bot:
+    :param update:
+    :return:
+    """
+    chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    try:
+        State(bot, chat_id, user_id, DeelgebiedUpdates, change_dg_updates)
+        bot.sendMessage(chat_id, "Voor welk deelgebied moeten updates aan of uit staan?\nA, B, C, D, E, F, X",
+                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+        Updates.get_updates().botan.track(update.message, 'deelgebied')
+    except MultipleConversationsError:
+        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit commando niet starten.\n"
+                                 " type /cancel om het vorige comando te stoppen te stoppen",
+                        reply_to_message_id=update.message.message_id)
+        Updates.get_updates().botan.track(update.message, 'incorrect_deelgebied')
+
+
+@void_no_crash()
+@authenticate()
+def error_updates(bot, update):
+    """
+
+    :param bot:
+    :param update:
+    :return:
+    """
+    chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    try:
+        State(bot, chat_id, user_id, ErrorUpdates, change_error_updates)
+        bot.sendMessage(chat_id, "Moeten error updates aan of uit staan?\naan/uit",
+                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+        Updates.get_updates().botan.track(update.message, 'error')
+    except MultipleConversationsError:
+        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit commando niet starten.\n"
+                                 " type /cancel om het vorige comando te stoppen te stoppen",
+                        reply_to_message_id=update.message.message_id)
+        Updates.get_updates().botan.track(update.message, 'incorrect_error')
+
+
+@void_no_crash()
+@authenticate()
+def hint_updates(bot, update):
+    """
+
+    :param bot:
+    :param update:
+    :return:
+    """
+    chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    try:
+        State(bot, chat_id, user_id, HintUpdates, change_hint_updates)
+        bot.sendMessage(chat_id, "Moeten hint updates aan of uit staan?\naan/uit",
+                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+        Updates.get_updates().botan.track(update.message, 'error')
+    except MultipleConversationsError:
+        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit commando niet starten.\n"
+                                 " type /cancel om het vorige comando te stoppen te stoppen",
+                        reply_to_message_id=update.message.message_id)
+        Updates.get_updates().botan.track(update.message, 'incorrect_error')
+
+
+###############################################################################
+# conversation functions.                                                     #
+#                                                                             #
+###############################################################################
+
+
+@void_no_crash()
 @authenticate()
 def conversation(bot, update):
+    updater = Updates.get_updates()
+    if not updater.has_bot():
+        updater.add_bot(bot)
+    updater.update()
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
     h = str(user_id) + str(chat_id)
@@ -384,12 +319,20 @@ def conversation(bot, update):
         deelgebied_conversation(bot, update, state)
     elif command == ErrorUpdates:
         add_error_listener_conversation(bot, update, state)
+    elif command == NieuwsUpdates:
+        add_nieuws_listener_conversation(bot, update, state)
+    elif command == OpdrachtUpdates:
+        add_opdracht_listener_conversation(bot, update, state)
+    elif command == HintUpdates:
+        add_hint_listener_conversation(bot, update, state)
+    elif command == PhotoUpdates:
+        pass  # TODO maak dit werkend
+    elif command == SCOUTING_GROEP:
+        pass  # TODO maak dit werkend
+    elif command == SWITCH_REMINDERS:
+        pass  # TODO maak dit werkend
 
 
-###############################################################################
-# conversation functions.                                                     #
-#                                                                             #
-###############################################################################
 @void_no_crash()
 def deelgebied_conversation(bot, update, state):
     s = state.get_state()
@@ -430,86 +373,66 @@ def add_error_listener_conversation(bot, update, state):
             bot.sendMessage(update.message.chat_id,
                             update.message.from_user.name +
                             ' kies uit aan of uit.\n' +
-                            ' of type /cancel om het comando te stoppen')
+                            ' of type /cancel om het commando te stoppen')
 
-
-###############################################################################
-# command functions.                                                          #
-#                                                                             #
-###############################################################################
-@void_no_crash()
-@authenticate()
-def cancel(bot, update):
-    """
-
-    :param bot:
-    :param update:
-    :return:
-    """
-    chat_id = update.message.chat_id
-    user_id = update.message.from_user.id
-    h = str(user_id) + str(chat_id)
-    try:
-        state = State.states[h]
-        state.cancel()
-    except KeyError:
-        bot.sendMessage(chat_id, "Er is geen commando actief.", reply_to_message_id=update.message.message_id)
-    else:
-        bot.sendMessage(chat_id, "Het commando is gestopt.", reply_to_message_id=update.message.message_id)
 
 @void_no_crash()
-@authenticate()
-def deelgebied_updates(bot, update):
-    """
-
-    :param bot:
-    :param update:
-    :return:
-    """
-    chat_id = update.message.chat_id
-    user_id = update.message.from_user.id
-    try:
-        State(bot, chat_id, user_id, DeelgebiedUpdates, change_dg_updates)
-        bot.sendMessage(chat_id, "Voor welk deelgebied moeten updates aan of uit staan?\nA, B, C, D, E, F, X",
-                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
-    except MultipleConversationsError:
-        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit commando niet starten.\n"
-                                 " type /cancel om het vorige comando te stoppen te stoppen",
-                        reply_to_message_id=update.message.message_id)
+def add_nieuws_listener_conversation(bot, update, state):
+    s = state.get_state()
+    if s == 0:
+        if update.message.text in ['aan', 'uit']:
+            state['status'] = update.message.text
+            state.done()
+            bot.sendMessage(update.message.chat_id,
+                            update.message.from_user.name + ' De nieuws updates zijn aan of uit gezet')
+        else:
+            bot.sendMessage(update.message.chat_id,
+                            update.message.from_user.name +
+                            ' kies uit aan of uit.\n' +
+                            ' of type /cancel om het commando te stoppen')
 
 
-def error_updates(bot, update):
-    """
-
-    :param bot:
-    :param update:
-    :return:
-    """
-    chat_id = update.message.chat_id
-    user_id = update.message.from_user.id
-    try:
-        State(bot, chat_id, user_id, ErrorUpdates, change_error_updates)
-        bot.sendMessage(chat_id, "Moeten error updates aan of uit staan?\naan/uit",
-                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
-    except MultipleConversationsError:
-        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit commando niet starten.\n"
-                                 " type /cancel om het vorige comando te stoppen te stoppen",
-                        reply_to_message_id=update.message.message_id)
+@void_no_crash()
+def add_opdracht_listener_conversation(bot, update, state):
+    s = state.get_state()
+    if s == 0:
+        if update.message.text in ['aan', 'uit']:
+            state['status'] = update.message.text
+            state.done()
+            bot.sendMessage(update.message.chat_id,
+                            update.message.from_user.name + ' De opdracht updates zijn aan of uit gezet')
+        else:
+            bot.sendMessage(update.message.chat_id,
+                            update.message.from_user.name +
+                            ' kies uit aan of uit.\n' +
+                            ' of type /cancel om het commando te stoppen')
 
 
-
-
-
-
+@void_no_crash()
+def add_hint_listener_conversation(bot, update, state):
+    s = state.get_state()
+    if s == 0:
+        if update.message.text in ['aan', 'uit']:
+            state['status'] = update.message.text
+            state.done()
+            bot.sendMessage(update.message.chat_id,
+                            update.message.from_user.name + ' De hint updates zijn aan of uit gezet')
+        else:
+            bot.sendMessage(update.message.chat_id,
+                            update.message.from_user.name +
+                            ' kies uit aan of uit.\n' +
+                            ' of type /cancel om het commando te stoppen')
 
 
 ###############################################################################
 # callback functions.                                                         #
 #                                                                             #
 ###############################################################################
+
+
 @void_no_crash()
 def change_dg_updates(state):
-    updates = Updates()
+    updates = Updates.get_updates()
     if state['deelgebied'] in ['a', 'A']:
         updates.set_updates(state.chat_id, Updates.ALPHA, state['status'] == 'aan')
     elif state['deelgebied'] in ['b', 'B']:
@@ -528,5 +451,17 @@ def change_dg_updates(state):
 
 @void_no_crash()
 def change_error_updates(state):
-    updates = Updates()
+    updates = Updates.get_updates()
     updates.set_updates(state.chat_id, Updates.ERROR, state['status'] == 'aan')
+
+
+@void_no_crash()
+def change_niews_updates(state):
+    updates = Updates.get_updates()
+    updates.set_updates(state.chat_id, Updates.NIEUWS, state['status'] == 'aan')
+
+
+@void_no_crash()
+def change_hints_updates(state):
+    updates = Updates.get_updates()
+    updates.set_updates(state.chat_id, Updates.HINTS, state['status'] == 'aan')
