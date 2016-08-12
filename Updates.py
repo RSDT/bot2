@@ -1,13 +1,34 @@
-from telegram.contrib.botan import Botan
+# from telegram.contrib.botan import Botan
+from MyBotan import Botan
 from pythonApi.RPApi.Base import Api as RPApi
 import tokens
 import logging
 import time
+import pythonApi.jotihunt.Retrievers as jotihuntApi
 
 ALPHA, BRAVO, CHARLIE, DELTA, ECHO, FOXTROT, XRAY, PHOTOS, OPDRACHTEN, NIEUWS, ERROR, HINTS = range(12)
 my_updates_instance = None
 __all__ = ['get_updates', 'ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT', 'XRAY',
            'PHOTOS', 'OPDRACHTEN', 'NIEUWS', 'ERROR', 'HINTS']
+
+status_plaatjes = {'a': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADOAADxPsqAXmyBBClXTd4Ag'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADNAADxPsqAWy_jDGSfM8VAg'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADNgADxPsqAW5L5FGEVeZsAg'}},
+                   'c': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADTAADxPsqAYLV3juZLpBdAg'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADSgADxPsqAT-u5My8rm3gAg'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADRgADxPsqAQV4dBO6m83XAg'}},
+                   'b': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADQAADxPsqAe0nAoB-ZMyOAg'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADQgADxPsqAYIFsuIiE6hzAg'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADRAADxPsqAWxDH1LIGSXKAg'}},
+                   'e': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADWgADxPsqAUL07wYDRvidAg'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADVAADxPsqAQsjZhRr4lEnAg'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADWAADxPsqATm-pA-vdphAAg'}},
+                   'd': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADTgADxPsqAZx6xRcZie8dAg'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADUgADxPsqAb2HyQa_q_n8Ag'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADUAADxPsqAQmw5iS__C7yAg'}},
+                   'f': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADXgADxPsqATT7K_u22oL7Ag'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADXAADxPsqAYLGQPHFp1xLAg'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADVgADxPsqAffXkv_Pldg-Ag'}}}
 
 
 def get_updates():
@@ -38,7 +59,6 @@ class MyUpdates:
         self.bot = None
         self.botan = Botan(tokens.botan_key)
         self._A = set()
-        self._A.add(19594180)  # TODO remove this
         self._B = set()
         self._C = set()
         self._D = set()
@@ -49,6 +69,7 @@ class MyUpdates:
         self._opdrachten = set()
         self._nieuws = set()
         self._error = set()
+        self._error.add(-158130982)
         self._hints = set()
         self._last_update = 0
         self.lastA = None
@@ -188,112 +209,106 @@ class MyUpdates:
         if self.lastA != vos_a and self.has_bot():
             self.lastA = vos_a
             for chat_id in self._A:
-                if vos_a['icon'] == '0':
-                    m = self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor Alpha.")
-                    self.botan.track(m, 'newLocA0')
-                    self.bot.sendLocation(chat_id, latitude=vos_a['latitude'], longitude=vos_a['longitude'])
-                elif vos_a['icon'] == '1':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos Alpha gespot.")
-                    self.botan.track(m, 'newLocA1')
-                    self.bot.sendLocation(chat_id, latitude=vos_a['latitude'], longitude=vos_a['longitude'])
-                elif vos_a['icon'] == '2':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos Alpha gehunt.")
-                    self.botan.track(m, 'newLocA2')
-                    self.bot.sendLocation(chat_id, latitude=vos_a['latitude'], longitude=vos_a['longitude'])
+                self.new_vos(chat_id, 'Alpha', vos_a)
         if self.lastB != vos_b and self.has_bot():
             self.lastB = vos_b
             for chat_id in self._B:
-                if vos_b['icon'] == '0':
-                    m =self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor Bravo.")
-                    self.botan.track(m, 'newLocB0')
-                    self.bot.sendLocation(chat_id, latitude=vos_b['latitude'], longitude=vos_b['longitude'])
-                elif vos_b['icon'] == '1':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos Bravo gespot.")
-                    self.botan.track(m, 'newLocB1')
-                    self.bot.sendLocation(chat_id, latitude=vos_b['latitude'], longitude=vos_b['longitude'])
-                elif vos_b['icon'] == '2':
-                    self.bot.sendMessage(chat_id, " Heeft Vos Bravo gehunt.")
-                    self.botan.track(m, 'newLocB2')
-                    self.bot.sendLocation(chat_id, latitude=vos_b['latitude'], longitude=vos_b['longitude'])
+                self.new_vos(chat_id, 'Bravo', vos_b)
         if self.lastC != vos_c and self.has_bot():
             self.lastC = vos_c
             for chat_id in self._C:
-                if vos_c['icon'] == '0':
-                    m = self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor Charlie.")
-                    self.botan.track(m, 'newLocC0')
-                    self.bot.sendLocation(chat_id, latitude=vos_c['latitude'], longitude=vos_c['longitude'])
-                elif vos_c['icon'] == '1':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos Charlie gespot.")
-                    self.botan.track(m, 'newLocC1')
-                    self.bot.sendLocation(chat_id, latitude=vos_c['latitude'], longitude=vos_c['longitude'])
-                elif vos_c['icon'] == '2':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos Charlie gehunt.")
-                    self.botan.track(m, 'newLocC2')
-                    self.bot.sendLocation(chat_id, latitude=vos_c['latitude'], longitude=vos_c['longitude'])
+                self.new_vos(chat_id, 'Charlie', vos_c)
         if self.lastD != vos_d and self.has_bot():
             self.lastD = vos_d
             for chat_id in self._D:
-                if vos_d['icon'] == '0':
-                    m = self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor Delta.")
-                    self.botan.track(m, 'newLocD0')
-                    self.bot.sendLocation(chat_id, latitude=vos_d['latitude'], longitude=vos_d['longitude'])
-                elif vos_d['icon'] == '1':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos Delta gespot.")
-                    self.botan.track(m, 'newLocD1')
-                    self.bot.sendLocation(chat_id, latitude=vos_d['latitude'], longitude=vos_d['longitude'])
-                elif vos_d['icon'] == '2':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos Delta gehunt.")
-                    self.botan.track(m, 'newLocD2')
-                    self.bot.sendLocation(chat_id, latitude=vos_d['latitude'], longitude=vos_d['longitude'])
+                self.new_vos(chat_id, 'Delta', vos_d)
         if self.lastE != vos_e and self.has_bot():
             self.lastE = vos_e
             for chat_id in self._E:
-                if vos_e['icon'] == '0':
-                    m = self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor Echo.")
-                    self.botan.track(m, 'newLocE0')
-                    self.bot.sendLocation(chat_id, latitude=vos_e['latitude'], longitude=vos_e['longitude'])
-                elif vos_e['icon'] == '1':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos Echo gespot.")
-                    self.botan.track(m, 'newLocE1')
-                    self.bot.sendLocation(chat_id, latitude=vos_e['latitude'], longitude=vos_e['longitude'])
-                elif vos_e['icon'] == '2':
-                    self.bot.sendMessage(chat_id, " Heeft Vos Echo gehunt.")
-                    self.botan.track(m, 'newLocE2')
-                    self.bot.sendLocation(chat_id, latitude=vos_e['latitude'], longitude=vos_e['longitude'])
+                self.new_vos(chat_id, 'Echo', vos_e)
         if self.lastF != vos_f and self.has_bot():
             self.lastF = vos_f
             for chat_id in self._F:
-                if vos_f['icon'] == '0':
-                    m = self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor Foxtrot.")
-                    self.botan.track(m, 'newLocF0')
-                    self.bot.sendLocation(chat_id, latitude=vos_f['latitude'], longitude=vos_f['longitude'])
-                elif vos_f['icon'] == '1':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos Foxtrot gespot.")
-                    self.botan.track(m, 'newLocF1')
-                    self.bot.sendLocation(chat_id, latitude=vos_f['latitude'], longitude=vos_f['longitude'])
-                elif vos_f['icon'] == '2':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos Foxtrot gehunt.")
-                    self.botan.track(m, 'newLocF2')
-                    self.bot.sendLocation(chat_id, latitude=vos_f['latitude'], longitude=vos_f['longitude'])
+                self.new_vos(chat_id, 'Foxtrot', vos_f)
         if self.lastX != vos_x and self.has_bot():
             self.lastX = vos_x
             for chat_id in self._X:
-                if vos_x['icon'] == '0':
-                    m = self.bot.sendMessage(chat_id, " Heeft een hint locatie verstuurd voor X-Ray.")
-                    self.botan.track(m, 'newLocX0')
-                    self.bot.sendLocation(chat_id, latitude=vos_x['latitude'], longitude=vos_x['longitude'])
-                elif vos_x['icon'] == '1':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos X-Ray gespot.")
-                    self.botan.track(m, 'newLocX1')
-                    self.bot.sendLocation(chat_id, latitude=vos_x['latitude'], longitude=vos_x['longitude'])
-                elif vos_x['icon'] == '2':
-                    m = self.bot.sendMessage(chat_id, " Heeft Vos X-Ray gehunt.")
-                    self.botan.track(m, 'newLocX2')
-                    self.bot.sendLocation(chat_id, latitude=vos_x['latitude'], longitude=vos_x['longitude'])
+                self.new_vos(chat_id, 'X-Ray', vos_x)
+
+    @void_no_crash()
+    def new_vos(self, chat_id, deelgebied, vos):
+        if vos['icon'] == '3':
+            m = self.bot.sendMessage(chat_id, deelgebied + " Is gespot.\n " +
+                                     "extra info: " + vos['extra'] + '\n' +
+                                     'opmerking/adres: ' + vos['opmerking'])
+        elif vos['icon'] == '4':
+            m = self.bot.sendMessage(chat_id, deelgebied + " is geshunt.\n" +
+                                     "extra info: " + vos['extra'] + '\n' +
+                                     'opmerking/adres: ' + vos['opmerking'])
+        else:
+            m = self.bot.sendMessage(chat_id, "Er is een Hint ingevoerd voor " + str(deelgebied) + '\n' +
+                                     'extra info: ' + str(vos['extra']) + '\n' +
+                                     'opmerking/adres: ' + str(vos['opmerking']))
+        self.bot.sendLocation(chat_id, latitude=vos['latitude'], longitude=vos['longitude'])
+        self.botan.track(m, 'newLoc_'+deelgebied + '_' + vos['icon'])
 
     @void_no_crash()
     def update_vos_status(self):
-        pass
+        response = jotihuntApi.get_vossen()
+        curr_status = response.data
+
+        def send_update(chat_id, vos, new_status):
+            if new_status is None:
+                return
+            m = self.bot.sendSticker(chat_id, status_plaatjes[vos][new_status])
+            self.botan.track(m, 'vos_status_' + vos+ '_' + new_status)
+
+        def extract_status(vos):
+            for item in curr_status:
+                if item['team'][0].lower() == vos:
+                    return item['status']
+        def send_a():
+            for chat_id in self._A:
+                vos = 'a'
+                send_update(chat_id, vos, extract_status(vos))
+        def send_b():
+            for chat_id in self._B:
+                vos = 'b'
+                send_update(chat_id, vos, extract_status(vos))
+        def send_c():
+            for chat_id in self._C:
+                vos = 'c'
+                send_update(chat_id, vos, extract_status(vos))
+        def send_d():
+            for chat_id in self._D:
+                vos = 'd'
+                send_update(chat_id, vos, extract_status(vos))
+
+        def send_e():
+            for chat_id in self._E:
+                vos = 'e'
+                send_update(chat_id, vos, extract_status(vos))
+
+        def send_f():
+            for chat_id in self._F:
+                vos = 'f'
+                send_update(chat_id, vos, extract_status(vos))
+
+        def send_x():
+            for chat_id in self._X:
+                vos = 'x'
+                send_update(chat_id, vos, extract_status(vos))
+        if self.lastStatus is None:
+            send_a()
+            send_b()
+            send_c()
+            send_d()
+            send_e()
+            send_f()
+            send_x()
+            self.lastStatus  = curr_status
+        else:
+
 
     @void_no_crash()
     def update_nieuws(self):
@@ -320,6 +335,7 @@ class MyUpdates:
         pass
 
     def error(self, e, func_name):
+        logging.info('updates error send to user:' + str(e) + ' ' + func_name)
         for chat_id in self._error:
             if self.has_bot():
                 self.bot.sendMessage(chat_id, "er is een error opgetreden:\n" + str(func_name)+'\n'+str(e))

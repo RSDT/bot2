@@ -1,6 +1,8 @@
 import requests
-url = 'https://mattijnkreuzen.nl/tg_users/telegramusers.php'
 import logging
+
+url = 'https://mattijnkreuzen.nl/tg_users/telegramusers.php'
+
 
 def authenticate_chat(tg_user_id, chat_id, SLEUTEL, username="unkown", chat_naam="unkown"):
     try:
