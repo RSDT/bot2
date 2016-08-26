@@ -1,6 +1,6 @@
 import requests
 
-from pythonApi.jotihunt.Base import Response, NIEUWS, OPDRACHT, NIEUWSLIJST, HINTS, HINT, OPDRACHTEN, SCORELIJST, VOSSEN
+from PythonApi.jotihunt.Base import Response, NIEUWS, OPDRACHT, NIEUWSLIJST, HINTS, HINT, OPDRACHTEN, SCORELIJST, VOSSEN
 
 _base_url = "http://www.jotihunt.net/api/1.0/"
 

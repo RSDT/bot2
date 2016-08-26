@@ -2,7 +2,7 @@ import re
 
 from tokens import phpsessid
 import requests
-import pythonApi.scraperApi.webscraper as webscraper
+import PythonApi.scraperApi.webscraper as webscraper
 login_url = 'http://www.jotihunt.net/groep/loginform.php'
 
 

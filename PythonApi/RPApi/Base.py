@@ -1,5 +1,5 @@
 import requests
-from pythonAPI.Base.Exceptions import VerificationError, BannedError, NoDataError, UndocumatedStatusCodeError, IAmATheaPotError
+from PythonApi.Base.Exceptions import VerificationError, BannedError, NoDataError, UndocumatedStatusCodeError, IAmATheaPotError
 from hashlib import sha1
 import json
 import time

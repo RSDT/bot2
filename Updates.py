@@ -1,10 +1,10 @@
 # from telegram.contrib.botan import Botan
 from MyBotan import Botan
-from pythonApi.RPApi.Base import Api as RPApi
+from PythonApi.RPApi.Base import Api as RPApi
 import tokens
 import logging
 import time
-import pythonApi.jotihunt.Retrievers as jotihuntApi
+import PythonApi.jotihunt.Retrievers as jotihuntApi
 import pickle
 import os
 

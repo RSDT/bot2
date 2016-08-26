@@ -1,4 +1,4 @@
-from pythonApi.Base.Exceptions import NoSuchTypeException, RetrieveException
+from PythonApi.Base.Exceptions import NoSuchTypeException, RetrieveException
 
 __all__ = ['SCORELIJST', 'OPDRACHT', 'OPDRACHTEN',
            'HINT', 'HINTS', 'NIEUWS',

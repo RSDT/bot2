@@ -1,7 +1,7 @@
 import unittest
-import RPApi.Base as rp_api
-import tests.mockrequests
-rp_api.requests = tests.mockrequests
+import PythonApi.RPApi.Base as rp_api
+import PythonApi.tests.mockrequests as mockrequests
+rp_api.requests = mockrequests
 
 
 class MyTestCase(unittest.TestCase):
