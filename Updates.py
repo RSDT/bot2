@@ -5,6 +5,10 @@ import tokens
 import logging
 import time
 import pythonApi.jotihunt.Retrievers as jotihuntApi
+import pickle
+import os
+
+UPDATER_FILE = 'updater.jhu'
 
 ALPHA, BRAVO, CHARLIE, DELTA, ECHO, FOXTROT, XRAY, PHOTOS, OPDRACHTEN, NIEUWS, ERROR, HINTS = range(12)
 my_updates_instance = None
@@ -34,7 +38,14 @@ status_plaatjes = {'a': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADOAADxP
 def get_updates():
     global my_updates_instance
     if my_updates_instance is None:
-        my_updates_instance = MyUpdates()
+        try:
+            if os.path.isfile(UPDATER_FILE):
+                with open(UPDATER_FILE, 'rb') as file:
+                    my_updates_instance = pickle.load(file)
+            else:
+                my_updates_instance = MyUpdates()
+        except:
+            my_updates_instance = MyUpdates()
     return my_updates_instance
 
 
@@ -102,6 +113,10 @@ class MyUpdates:
             pass
         else:
             return
+
+    def save(self):
+        with open(UPDATER_FILE, 'wb') as file:
+            pickle.dump(self, file)
 
     @void_no_crash()
     def add_bot(self, bot):
@@ -261,24 +276,29 @@ class MyUpdates:
             if new_status is None:
                 return
             m = self.bot.sendSticker(chat_id, status_plaatjes[vos][new_status])
-            self.botan.track(m, 'vos_status_' + vos+ '_' + new_status)
+            self.botan.track(m, 'vos_status_' + vos + '_' + new_status)
+            send_cloudmessage(vos, new_status)
 
         def extract_status(vos):
             for item in curr_status:
                 if item['team'][0].lower() == vos:
                     return item['status']
+
         def send_a():
             for chat_id in self._A:
                 vos = 'a'
                 send_update(chat_id, vos, extract_status(vos))
+
         def send_b():
             for chat_id in self._B:
                 vos = 'b'
                 send_update(chat_id, vos, extract_status(vos))
+
         def send_c():
             for chat_id in self._C:
                 vos = 'c'
                 send_update(chat_id, vos, extract_status(vos))
+
         def send_d():
             for chat_id in self._D:
                 vos = 'd'
@@ -306,8 +326,22 @@ class MyUpdates:
             send_e()
             send_f()
             send_x()
-            self.lastStatus  = curr_status
+            self.lastStatus = curr_status
         else:
+            for item in curr_status:
+                if item['team'] == 'Alpha' and item['status'] != extract_status('a')['status']:
+                    send_a()
+                if item['team'] == 'Bravo' and item['status'] != extract_status('b')['status']:
+                    send_b()
+                if item['team'] == 'Charlie' and item['status'] != extract_status('c')['status']:
+                    send_c()
+                if item['team'] == 'Delta' and item['status'] != extract_status('d')['status']:
+                    send_d()
+                if item['team'] == 'Echo' and item['status'] != extract_status('e')['status']:
+                    send_e()
+                if item['team'] == 'Foxtrot' and item['status'] != extract_status('f')['status']:
+                    send_f()
+                self.lastStatus = curr_status
 
 
     @void_no_crash()
@@ -339,3 +373,8 @@ class MyUpdates:
         for chat_id in self._error:
             if self.has_bot():
                 self.bot.sendMessage(chat_id, "er is een error opgetreden:\n" + str(func_name)+'\n'+str(e))
+
+
+def send_cloudmessage(vos, status):
+    key = tokens.firebase_key
+    data = {'vos': vos, 'status': status}
