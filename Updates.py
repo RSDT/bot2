@@ -41,11 +41,16 @@ def get_updates():
         try:
             if os.path.isfile(UPDATER_FILE):
                 with open(UPDATER_FILE, 'rb') as file:
-                    my_updates_instance = pickle.load(file)
+                    my_updates_instance = MyUpdates()
+                    d = pickle.load(file)
+                    my_updates_instance.from_dict(d)
+                    if my_updates_instance is None:
+                        raise Exception('huh')
             else:
                 my_updates_instance = MyUpdates()
-        except:
+        except Exception as e:
             my_updates_instance = MyUpdates()
+            my_updates_instance.error(e, 'startup error')
     return my_updates_instance
 
 
@@ -69,19 +74,22 @@ class MyUpdates:
     def __init__(self):
         self.bot = None
         self.botan = Botan(tokens.botan_key)
-        self._A = set()
-        self._B = set()
-        self._C = set()
-        self._D = set()
-        self._E = set()
-        self._F = set()
-        self._X = set()
-        self._photos = set()
-        self._opdrachten = set()
-        self._nieuws = set()
-        self._error = set()
+
+        # sets met chat_ids die updates willen ontvangen.
+        self._A = set()  # naam niet veranderen
+        self._B = set()  # naam niet veranderen
+        self._C = set()  # naam niet veranderen
+        self._D = set()  # naam niet veranderen
+        self._E = set()  # naam niet veranderen
+        self._F = set()  # naam niet veranderen
+        self._X = set()  # naam niet veranderen
+        self._photos = set()  # naam niet veranderen
+        self._opdrachten = set()  # naam niet veranderen
+        self._nieuws = set()  # naam niet veranderen
+        self._error = set()  # naam niet veranderen
         self._error.add(-158130982)
-        self._hints = set()
+        self._hints = set()  # naam niet veranderen
+
         self._last_update = 0
         self.lastA = None
         self.lastB = None
@@ -97,10 +105,29 @@ class MyUpdates:
         self.lastMail = None
         self.rp_api = RPApi.get_instance(tokens.rp_username, tokens.rp_pass)
 
+    def to_dict(self):
+        return {'A': self._A,
+                'B': self._B,
+                'C': self._C,
+                'D': self._D,
+                'E': self._E,
+                'F': self._F,
+                'X': self._X,
+                'photos': self._photos,
+                'opdrachten': self._opdrachten,
+                'nieuws': self._nieuws,
+                'error': self._error,
+                'hints': self._hints
+                }
+
+    @void_no_crash()
+    def from_dict(self, d):
+        for k in d:
+            setattr(self, '_' + k, d[k])
+
     @void_no_crash()
     def update(self):
         if self.has_bot() and (self._last_update is None or abs(time.time() - self._last_update) > 60):
-            pass
             self.update_vos_last()
             self.update_vos_status()
             self.update_nieuws()
@@ -110,13 +137,13 @@ class MyUpdates:
             self.update_mail()
             self.update_hunts()
             self._last_update = time.time()
-            pass
         else:
             return
 
     def save(self):
+        d = self.to_dict()
         with open(UPDATER_FILE, 'wb') as file:
-            pickle.dump(self, file)
+            pickle.dump(d, file)
 
     @void_no_crash()
     def add_bot(self, bot):
@@ -275,14 +302,12 @@ class MyUpdates:
         def send_update(chat_id, vos, new_status):
             if new_status is None:
                 return
-            m = self.bot.sendSticker(chat_id, status_plaatjes[vos][new_status])
+            m = self.bot.sendSticker(chat_id, status_plaatjes[vos][new_status]['file_id'])
             self.botan.track(m, 'vos_status_' + vos + '_' + new_status)
             send_cloudmessage(vos, new_status)
 
         def extract_status(vos):
-            for item in curr_status:
-                if item['team'][0].lower() == vos:
-                    return item['status']
+            return curr_status[vos[0].lower()].status
 
         def send_a():
             for chat_id in self._A:
@@ -328,21 +353,20 @@ class MyUpdates:
             send_x()
             self.lastStatus = curr_status
         else:
-            for item in curr_status:
-                if item['team'] == 'Alpha' and item['status'] != extract_status('a')['status']:
+            for k, item in enumerate(curr_status):
+                if item.team == 'Alpha' and item['status'] != extract_status('a')['status']:
                     send_a()
-                if item['team'] == 'Bravo' and item['status'] != extract_status('b')['status']:
+                if item.team == 'Bravo' and item['status'] != extract_status('b')['status']:
                     send_b()
-                if item['team'] == 'Charlie' and item['status'] != extract_status('c')['status']:
+                if item.team == 'Charlie' and item['status'] != extract_status('c')['status']:
                     send_c()
-                if item['team'] == 'Delta' and item['status'] != extract_status('d')['status']:
+                if item.team == 'Delta' and item['status'] != extract_status('d')['status']:
                     send_d()
-                if item['team'] == 'Echo' and item['status'] != extract_status('e')['status']:
+                if item.team == 'Echo' and item['status'] != extract_status('e')['status']:
                     send_e()
-                if item['team'] == 'Foxtrot' and item['status'] != extract_status('f')['status']:
+                if item.team == 'Foxtrot' and item['status'] != extract_status('f')['status']:
                     send_f()
                 self.lastStatus = curr_status
-
 
     @void_no_crash()
     def update_nieuws(self):

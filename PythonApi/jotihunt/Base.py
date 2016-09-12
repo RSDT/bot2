@@ -21,25 +21,27 @@ class Response:
             self.data = Opdracht(json["data"][0])
         elif self.type == OPDRACHTEN:
             self.data = []
-            from pythonApi.jotihunt.Retrievers import get_opdracht
+            from PythonApi.jotihunt.Retrievers import get_opdracht
             for opdracht in json["data"]:
                 self.data.append(get_opdracht(opdracht["ID"]))
         elif self.type == HINT:
             self.data = Hint(json["data"][0])
         elif self.type == HINTS:
             self.data = []
-            from pythonApi.jotihunt.Retrievers import get_hint
+            from PythonApi.jotihunt.Retrievers import get_hint
             for hint in json["data"]:
                 self.data.append(get_hint(hint["ID"]))
         elif self.type == NIEUWS:
             self.data = Nieuws(json["data"][0])
         elif self.type == NIEUWSLIJST:
             self.data = []
-            from pythonApi.jotihunt.Retrievers import get_nieuws
+            from PythonApi.jotihunt.Retrievers import get_nieuws
             for nieuws in json["data"]:
                 self.data.append(get_nieuws(nieuws["ID"]))
         elif self.type == VOSSEN:
-            self.data = Vos(json['data'])
+            self.data = dict()
+            for v in json['data']:
+                self.data[v['team'][0].lower()] = Vos(v['team'], v['status'])
         else:
             raise NoSuchTypeException(str(self.type))
 
@@ -85,10 +87,13 @@ class Nieuws(Base):
 
 
 class Vos:
-    def __init__(self, json):
+    def __init__(self, team, status):
         self._data = dict()
-        for vos in json:
-            self._data[vos['team']] = vos['status']
+        self.team = team
+        self.status = status
+
+    def __eq__(self, other):
+        return self.team == other.team and self.status == other.status
 
     def __getattr__(self, item):
         try:

@@ -570,9 +570,11 @@ def change_hints_updates(state):
 
 @void_no_crash()
 def bug_done(state):
-    bot = Updates.get_updates().bot
-    bot.sendMessage(-158130982, 'Er is bug gemeld.\n' +
-                    'door: ' + state['from'] + '\n' +
-                    'aangeroepen met: ' + state['command'] + '\n' +
-                    'het gaat over: ' + state['about'] + '\n' +
-                    'de text:\n' + state['message'])
+    updates = Updates.get_updates()
+    message = 'Er is bug gemeld.\n' +\
+                    'door: ' + state['from'] + '\n' +\
+                    'aangeroepen met: ' + state['command'] + '\n' +\
+                    'het gaat over: ' + state['about'] + '\n' +\
+                    'de text:\n' + state['message']
+    updates.error(Exception(message), 'bug_done')
+    updates.bot.sendMessage(-158130982, message)

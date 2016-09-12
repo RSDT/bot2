@@ -46,6 +46,7 @@ def main():
     t.stop()
     updates = Updates.get_updates()
     updates.error(Exception("de bot gaat stoppen"), "de bot gaat stoppen")
+    updates.save()
     t.join()
 
 if __name__ == "__main__":

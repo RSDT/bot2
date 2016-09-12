@@ -18,7 +18,7 @@ class Api:
         self.last_update = None
         self.api_key = None
         self.hunternaam = None
-        self._base_url = 'http://jotihunt-API_V2.area348.nl/'
+        self._base_url = 'http://jotihunt-API-V2.area348.nl/'
         self.login()
 
     @staticmethod
@@ -154,7 +154,8 @@ class Api:
         data = {'gebruiker': self.username, 'ww': self.hashed_password}
         root = 'login'
         self.last_update = time.time()
-        sleutel = self._send_request(root, data=data)['SLEUTEL']
+        response = self._send_request(root, data=data)
+        sleutel = response['SLEUTEL']
         self.api_key = sleutel
 
     def send_hunter_location(self, lat, lon, icon=0):

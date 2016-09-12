@@ -17,10 +17,8 @@ def void_no_crash():
                     logging.error(str(e) + '\n' + func.__name__)
                     updates.error(e, func.__name__)
                 else:
-                    logging.error(str(e) + '\nik weet het niet meer')
-                    updates.error(e, 'ik weet het niet meer')
-                raise e
-
+                    logging.error(str(e) + '\nIk weet het niet meer.')
+                    updates.error(e, '\nIk weet het niet meer.')
         return call
 
     return decorate
