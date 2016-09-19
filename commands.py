@@ -1,5 +1,5 @@
 from telegram.ext import Updater, MessageHandler, Filters
-import tokens
+import settings
 import Updates
 from wrappers import void_no_crash, authenticate
 from CommandHandlerWithHelp import CommandHandlerWithHelp
@@ -78,7 +78,7 @@ def error_handler(bot, update, error):
 
 
 def create_updater():
-    updater = Updater(token=tokens.bot_key)
+    updater = Updater(token=settings.Settings().bot_key)
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandlerWithHelp('cancel', cancel, 'verlaat het huidige commando'))
@@ -94,9 +94,34 @@ def create_updater():
     dp.add_handler(CommandHandlerWithHelp('hints', hint_updates, 'zet hint updates aan of uit.'))
     dp.add_handler(CommandHandlerWithHelp('fotos', photo_updates, 'zet foto updates aan of uit.'))
     dp.add_handler(CommandHandlerWithHelp('bug', bug, 'gebruik dit commando als iets te melden hebt over de app,  site ofde bot. Of over een ander onderdeel van de hunt'))
+    dp.add_handler(CommandHandlerWithHelp('phpsessid', set_phpsessid, 'HIER NIET AANKOMEN!!!!!!!!!!!! zet de phpsess cookie van jotihunt.net'))
     dp.add_handler(MessageHandler([Filters.text], conversation))
     dp.add_handler(MessageHandler([Filters.status_update], on_new_user))
     return updater
+
+
+@void_no_crash()
+@authenticate()
+def set_phpsessid(bot, update):
+    chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    try:
+        state = State(bot, chat_id, user_id, phpsessid_conversation, phpsessid_done)
+        state['command'] = update.message.text
+        state['from'] = update.message.from_user.name
+        bot.sendMessage(chat_id,
+                        'stap 1: login op jotihunt.net\n ' +
+                        'stap2: zoek uit hoe je cookies van jothunt.net uitleest in je browser. \n' +
+                        ' stap 3: ga op zook naar de cookie met de naam PHPSESSID.\n ' +
+                        'stap 4: plak de waarde hier om de cookie te verversen van de bot.\n' +
+                        ' of /cancel om te stoppen',
+        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+        Updates.get_updates().botan.track(update.message, 'phpsessid')
+    except MultipleConversationsError:
+        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit commando niet starten.\n"
+                                 " type /cancel om het vorige commando te stoppen te stoppen",
+                        reply_to_message_id=update.message.message_id)
+        Updates.get_updates().botan.track(update.message, 'incorrect_phpsessid')
 
 
 def on_new_user(bot, update):
@@ -106,7 +131,7 @@ def on_new_user(bot, update):
         else:
             username = update.message.new_chat_member.first_name
         chatname = update.message.chat.title
-        if authenticator.authenticate_chat(update.message.new_chat_member.id, update.message.chat_id, tokens.SLEUTEL,
+        if authenticator.authenticate_chat(update.message.new_chat_member.id, update.message.chat_id, settings.Settings().SLEUTEL,
                                            username=username, chat_naam=chatname):
             bot.sendMessage(update.message.chat_id, 'welkom ' + username +
                             ' \n Je bent geregistreerd als gebruiker van de RP Je kunt nu de bot gebruiken. /help')
@@ -155,7 +180,7 @@ def opdrachten(bot, update):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
     try:
-        State(bot, chat_id, user_id, add_opdracht_listener_conversation, change_niews_updates)
+        State(bot, chat_id, user_id, add_opdracht_listener_conversation, change_opdracht_updates)
         bot.sendMessage(chat_id, "Moeten opdracht updates aan of uit staan?\naan/uit",
                         reply_to_message_id=update.message.message_id)  # TODO add a keyboard
         Updates.get_updates().botan.track(update.message, 'opdracht_update')
@@ -481,6 +506,14 @@ def add_nieuws_listener_conversation(bot, update, state):
                             update.message.from_user.name +
                             ' kies uit aan of uit.\n' +
                             ' of type /cancel om het commando te stoppen')
+@void_no_crash()
+def phpsessid_conversation(bot, update, state):
+    s = state.get_state()
+    if s == 0:
+        state['cookie'] = update.message.text
+        state.done()
+        bot.sendMessage(update.message.chat_id,
+                        update.message.from_user.name + ' de cookie is aangepast.')
 
 
 @void_no_crash()
@@ -551,6 +584,12 @@ def change_dg_updates(state):
 
 
 @void_no_crash()
+def change_opdracht_updates(state):
+    updates = Updates.get_updates()
+    updates.set_updates(state.chat_id, Updates.OPDRACHTEN, state['status'] == 'aan')
+
+
+@void_no_crash()
 def change_error_updates(state):
     updates = Updates.get_updates()
     updates.set_updates(state.chat_id, Updates.ERROR, state['status'] == 'aan')
@@ -578,3 +617,8 @@ def bug_done(state):
                     'de text:\n' + state['message']
     updates.error(Exception(message), 'bug_done')
     updates.bot.sendMessage(-158130982, message)
+
+
+def phpsessid_done(state):
+    s = settings.Settings()
+    s.phpsessid = state['cookie']

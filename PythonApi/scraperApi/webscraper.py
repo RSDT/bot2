@@ -88,10 +88,10 @@ def to_dict(table, collumns, identifier):
     """
     d = dict()
     if identifier not in collumns:
-        raise Exception
+        raise Exception()
     for row in table:
         if len(row) != len(collumns):
-            raise Exception
+            raise Exception()
         temp = dict()
         for i, x in enumerate(row):
             temp[collumns[i]] = x

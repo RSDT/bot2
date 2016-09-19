@@ -1,4 +1,4 @@
-import tokens
+import settings
 import authenticator
 import logging
 import Updates
@@ -33,7 +33,7 @@ def authenticate():
             username = update.message.from_user.name
             chat_name = update.message.chat.title or (
                 update.message.chat.first_name + ' ' + update.message.chat.last_name)
-            if authenticator.authenticate_chat(user_id, chat_id, tokens.SLEUTEL, username, chat_name):
+            if authenticator.authenticate_chat(user_id, chat_id, settings.Settings().SLEUTEL, username, chat_name):
                 return func(bot, update)
             else:
                 if type(chat_id) == int and chat_id > 0:

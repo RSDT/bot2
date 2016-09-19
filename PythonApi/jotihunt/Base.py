@@ -45,6 +45,16 @@ class Response:
         else:
             raise NoSuchTypeException(str(self.type))
 
+    def __eq__(self, other):
+        if other is None:
+            return False
+        if self.type != other.type:
+            return False
+        elif self.type in [OPDRACHT, HINT, NIEUWS]:
+            return self.data.ID == other.data.ID
+        else:
+            return self.last_update == other.last_update
+
     def __str__(self):
         data = ""
         if type(self.data) == list:

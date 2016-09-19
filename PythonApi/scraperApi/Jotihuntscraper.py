@@ -1,6 +1,6 @@
 import re
 
-from tokens import phpsessid
+import settings
 import requests
 import PythonApi.scraperApi.webscraper as webscraper
 login_url = 'http://www.jotihunt.net/groep/loginform.php'
@@ -9,7 +9,7 @@ login_url = 'http://www.jotihunt.net/groep/loginform.php'
 def get_opdrachten():
     try:
         with requests.Session() as session:
-            session.cookies.set('PHPSESSID', phpsessid)
+            session.cookies.set('PHPSESSID', settings.Settings().phpsessid)
             r = session.get('http://www.jotihunt.net/groep/opdrachten.php')
             scraper = webscraper.TableHTMLParser()
             scraper.feed(r.text)
@@ -27,7 +27,7 @@ def get_opdrachten():
 def get_hunts():
     try:
         with requests.Session() as session:
-            session.cookies.set('PHPSESSID', phpsessid)
+            session.cookies.set('PHPSESSID', settings.Settings().phpsessid)
             r = session.get('http://www.jotihunt.net/groep/hunts.php')
             scraper = webscraper.TableHTMLParser()
             scraper.feed(r.text)
@@ -49,5 +49,6 @@ def fix_opdrachten(table):
         table.insert(i, row)
     return table
 
-webscraper.print_table(get_opdrachten()[0])
-webscraper.print_table(get_hunts()[0])
+if __name__ == '__main__':
+    webscraper.print_table(get_opdrachten()[0])
+    webscraper.print_table(get_hunts()[0])

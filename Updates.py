@@ -1,12 +1,15 @@
 # from telegram.contrib.botan import Botan
 from MyBotan import Botan
 from PythonApi.RPApi.Base import Api as RPApi
-import tokens
+import settings
 import logging
 import time
 import PythonApi.jotihunt.Retrievers as jotihuntApi
 import pickle
 import os
+from telegram.parsemode import ParseMode as parsemode
+import re
+import imaplib
 
 UPDATER_FILE = 'updater.jhu'
 
@@ -72,8 +75,12 @@ def void_no_crash():
 
 class MyUpdates:
     def __init__(self):
+
+        self.mail = imaplib.IMAP4_SSL('imap.gmail.com')
+        self.mail.login(settings.Settings().rpmail_username, settings.Settings().rpmail_pass)
+        self.mail.select('INBOX')
         self.bot = None
-        self.botan = Botan(tokens.botan_key)
+        self.botan = Botan(settings.Settings().botan_key)
 
         # sets met chat_ids die updates willen ontvangen.
         self._A = set()  # naam niet veranderen
@@ -87,8 +94,12 @@ class MyUpdates:
         self._opdrachten = set()  # naam niet veranderen
         self._nieuws = set()  # naam niet veranderen
         self._error = set()  # naam niet veranderen
-        self._error.add(-158130982)
         self._hints = set()  # naam niet veranderen
+        self._punten = {'opdrachten': 0,
+                        'hints': 0,
+                        'hunts': 0,
+                        'fotos': 0,
+                        'totaal': 0}
 
         self._last_update = 0
         self.lastA = None
@@ -102,8 +113,9 @@ class MyUpdates:
         self.lastOpdracht = None
         self.lastNieuws = None
         self.lastStatus = None
-        self.lastMail = None
-        self.rp_api = RPApi.get_instance(tokens.rp_username, tokens.rp_pass)
+        self.seenMail = set()
+        self.lastHint = None
+        self.rp_api = RPApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
 
     def to_dict(self):
         return {'A': self._A,
@@ -117,7 +129,8 @@ class MyUpdates:
                 'opdrachten': self._opdrachten,
                 'nieuws': self._nieuws,
                 'error': self._error,
-                'hints': self._hints
+                'hints': self._hints,
+                'punten': self._punten
                 }
 
     @void_no_crash()
@@ -370,15 +383,36 @@ class MyUpdates:
 
     @void_no_crash()
     def update_nieuws(self):
-        pass
+        nieuws = jotihuntApi.get_nieuws_lijst().data
+        if nieuws and nieuws[0] != self.lastNieuws:
+            item = nieuws[0].data
+            message = 'Er is nieuws met de titel [{title}]({url})'.format(title=item.titel,
+                                                                          url=settings.Settings().base_nieuws_url + item.ID)
+            for chat_id in self._nieuws:
+                self.bot.sendMessage(chat_id, message, parse_mode=parsemode.MARKDOWN)
+            self.lastNieuws = nieuws[0]
 
     @void_no_crash()
     def update_opdrachten(self):
-        pass
+        opdrachten = jotihuntApi.get_opdrachten().data
+        if opdrachten and opdrachten[0] != self.lastOpdracht:
+            opdracht = opdrachten[0].data
+            message = 'Er is nieuws met de titel [{title}]({url})'.format(title=opdracht.titel,
+                                                                          url=settings.Settings().base_opdracht_url + opdracht.ID)
+            for chat_id in self._opdrachten:
+                self.bot.sendMessage(chat_id, message, parse_mode=parsemode.MARKDOWN)
+            self.lastOpdracht = opdrachten[0]
 
     @void_no_crash()
     def update_hint(self):
-        pass
+        hints = jotihuntApi.get_hints().data
+        if hints and hints[0] != self.lastHint:
+            hint = hints[0].data
+            message = 'Er is een hint met de titel [{title}]({url})'.format(title=hint.titel,
+                                                                          url=settings.Settings().base_hint_url + hint.ID)
+            for chat_id in self._hints:
+                self.bot.sendMessage(chat_id, message, parse_mode=parsemode.MARKDOWN)
+            self.lastHint = hints[0]
 
     @void_no_crash()
     def update_foto_opdracht(self):
@@ -386,7 +420,32 @@ class MyUpdates:
 
     @void_no_crash()
     def update_mail(self):
-        pass
+        i = 1
+        found = []
+        self.mail.search(None, 'ALL')
+        while True:
+            j = bytes(str(i), 'utf8')
+            try:
+                status, mail = self.mail.fetch(j, '(RFC822)')
+            except:
+                break
+            if mail[0] is None:
+                break
+            raw_text = mail[0][1].decode('utf8')
+            result = re.search('de opdracht(.)*?deze opdracht', raw_text, re.S)
+            if result is not None and result.group(0) not in self.seenMail:
+                found.append(result.group(0))
+                self.seenMail.add(result)
+            result = re.search('Jullie tegenhunt is begonnen(.)*?Koffie of iets lekkers aanbieden mag uiteraard wel', raw_text, re.S)
+            if result is not None and result.group(0) not in self.seenMail:
+                found.append(result.group(0))
+                self.seenMail.add(result.group(0))
+            i+=1
+        for update in found:
+            for chat_id in self._nieuws:
+                self.bot.sendMessage(chat_id, 'Er is een mail van de organisatie:\n' + str(update))
+
+
 
     @void_no_crash()
     def update_hunts(self):
@@ -400,5 +459,5 @@ class MyUpdates:
 
 
 def send_cloudmessage(vos, status):
-    key = tokens.firebase_key
+    key = settings.Settings().firebase_key
     data = {'vos': vos, 'status': status}

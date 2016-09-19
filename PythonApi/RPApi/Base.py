@@ -156,6 +156,9 @@ class Api:
         self.last_update = time.time()
         response = self._send_request(root, data=data)
         sleutel = response['SLEUTEL']
+        import settings
+        settings = settings.Settings
+        settings.SLEUTEL = sleutel
         self.api_key = sleutel
 
     def send_hunter_location(self, lat, lon, icon=0):
