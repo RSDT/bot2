@@ -464,7 +464,7 @@ def deelgebied_conversation(bot, update, state):
                             ' Dat deelgebied ken ik niet. kies uit A, B, C, D, E, F of X.\n' +
                             ' of type /cancel om het commando te stoppen')
     if s == 1:
-        if update.message.text in ['aan', 'uit']:
+        if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
             state['status'] = update.message.text
             state.done()
             bot.sendMessage(update.message.chat_id,
@@ -480,7 +480,7 @@ def deelgebied_conversation(bot, update, state):
 def add_error_listener_conversation(bot, update, state):
     s = state.get_state()
     if s == 0:
-        if update.message.text in ['aan', 'uit']:
+        if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
             state['status'] = update.message.text
             state.done()
             bot.sendMessage(update.message.chat_id,
@@ -496,7 +496,7 @@ def add_error_listener_conversation(bot, update, state):
 def add_nieuws_listener_conversation(bot, update, state):
     s = state.get_state()
     if s == 0:
-        if update.message.text in ['aan', 'uit']:
+        if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
             state['status'] = update.message.text
             state.done()
             bot.sendMessage(update.message.chat_id,
@@ -506,6 +506,8 @@ def add_nieuws_listener_conversation(bot, update, state):
                             update.message.from_user.name +
                             ' kies uit aan of uit.\n' +
                             ' of type /cancel om het commando te stoppen')
+
+
 @void_no_crash()
 def phpsessid_conversation(bot, update, state):
     s = state.get_state()
@@ -520,7 +522,7 @@ def phpsessid_conversation(bot, update, state):
 def add_opdracht_listener_conversation(bot, update, state):
     s = state.get_state()
     if s == 0:
-        if update.message.text in ['aan', 'uit']:
+        if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
             state['status'] = update.message.text
             state.done()
             bot.sendMessage(update.message.chat_id,
@@ -536,7 +538,7 @@ def add_opdracht_listener_conversation(bot, update, state):
 def add_hint_listener_conversation(bot, update, state):
     s = state.get_state()
     if s == 0:
-        if update.message.text in ['aan', 'uit']:
+        if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
             state['status'] = update.message.text
             state.done()
             bot.sendMessage(update.message.chat_id,
@@ -568,43 +570,43 @@ def bug_conversation(bot, update, state):
 def change_dg_updates(state):
     updates = Updates.get_updates()
     if state['deelgebied'] in ['a', 'A']:
-        updates.set_updates(state.chat_id, Updates.ALPHA, state['status'] == 'aan')
+        updates.set_updates(state.chat_id, Updates.ALPHA, state['status'] in ['aan', 'Aan'])
     elif state['deelgebied'] in ['b', 'B']:
-        updates.set_updates(state.chat_id, Updates.BRAVO, state['status'] == 'aan')
+        updates.set_updates(state.chat_id, Updates.BRAVO, state['status'] in ['aan', 'Aan'])
     elif state['deelgebied'] in ['c', 'C']:
-        updates.set_updates(state.chat_id, Updates.CHARLIE, state['status'] == 'aan')
+        updates.set_updates(state.chat_id, Updates.CHARLIE, state['status'] in ['aan', 'Aan'])
     elif state['deelgebied'] in ['d', 'D']:
-        updates.set_updates(state.chat_id, Updates.DELTA, state['status'] == 'aan')
+        updates.set_updates(state.chat_id, Updates.DELTA, state['status'] in ['aan', 'Aan'])
     elif state['deelgebied'] in ['e', 'E']:
-        updates.set_updates(state.chat_id, Updates.ECHO, state['status'] == 'aan')
+        updates.set_updates(state.chat_id, Updates.ECHO, state['status'] in ['aan', 'Aan'])
     elif state['deelgebied'] in ['f', 'F']:
-        updates.set_updates(state.chat_id, Updates.FOXTROT, state['status'] == 'aan')
+        updates.set_updates(state.chat_id, Updates.FOXTROT, state['status'] in ['aan', 'Aan'])
     elif state['deelgebied'] in ['x', 'X']:
-        updates.set_updates(state.chat_id, Updates.XRAY, state['status'] == 'aan')
+        updates.set_updates(state.chat_id, Updates.XRAY, state['status'] in ['aan', 'Aan'])
 
 
 @void_no_crash()
 def change_opdracht_updates(state):
     updates = Updates.get_updates()
-    updates.set_updates(state.chat_id, Updates.OPDRACHTEN, state['status'] == 'aan')
+    updates.set_updates(state.chat_id, Updates.OPDRACHTEN, state['status'] in ['aan', 'Aan'])
 
 
 @void_no_crash()
 def change_error_updates(state):
     updates = Updates.get_updates()
-    updates.set_updates(state.chat_id, Updates.ERROR, state['status'] == 'aan')
+    updates.set_updates(state.chat_id, Updates.ERROR, state['status'] in ['aan', 'Aan'])
 
 
 @void_no_crash()
 def change_niews_updates(state):
     updates = Updates.get_updates()
-    updates.set_updates(state.chat_id, Updates.NIEUWS, state['status'] == 'aan')
+    updates.set_updates(state.chat_id, Updates.NIEUWS, state['status'] in ['aan', 'Aan'])
 
 
 @void_no_crash()
 def change_hints_updates(state):
     updates = Updates.get_updates()
-    updates.set_updates(state.chat_id, Updates.HINTS, state['status'] == 'aan')
+    updates.set_updates(state.chat_id, Updates.HINTS, state['status'] in ['aan', 'Aan'])
 
 
 @void_no_crash()
@@ -619,6 +621,7 @@ def bug_done(state):
     updates.bot.sendMessage(-158130982, message)
 
 
+@void_no_crash()
 def phpsessid_done(state):
     s = settings.Settings()
     s.phpsessid = state['cookie']
