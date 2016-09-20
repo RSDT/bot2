@@ -94,7 +94,7 @@ def create_updater():
     dp.add_handler(CommandHandlerWithHelp('hints', hint_updates, 'zet hint updates aan of uit.'))
     dp.add_handler(CommandHandlerWithHelp('fotos', photo_updates, 'zet foto updates aan of uit.'))
     dp.add_handler(CommandHandlerWithHelp('bug', bug, 'gebruik dit commando als iets te melden hebt over de app,  site ofde bot. Of over een ander onderdeel van de hunt'))
-    dp.add_handler(CommandHandlerWithHelp('phpsessid', set_phpsessid, 'HIER NIET AANKOMEN!!!!!!!!!!!! zet de phpsess cookie van jotihunt.net'))
+    dp.add_handler(CommandHandlerWithHelp('phpsessid', set_phpsessid, 'HIER NIET AANKOMEN!!!!!!!!!!!! zet de phpsessid cookie van jotihunt.net'))
     dp.add_handler(MessageHandler([Filters.text], conversation))
     dp.add_handler(MessageHandler([Filters.status_update], on_new_user))
     return updater
@@ -124,6 +124,7 @@ def set_phpsessid(bot, update):
         Updates.get_updates().botan.track(update.message, 'incorrect_phpsessid')
 
 
+@void_no_crash()
 def on_new_user(bot, update):
     if update.message.new_chat_member:
         if update.message.new_chat_member.username:

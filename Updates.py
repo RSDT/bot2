@@ -10,6 +10,8 @@ import os
 from telegram.parsemode import ParseMode as parsemode
 import re
 import imaplib
+from PythonApi.scraperApi.Jotihuntscraper import get_opdrachten, get_hunts
+from PythonApi.scraperApi.webscraper import to_dict
 
 UPDATER_FILE = 'updater.jhu'
 
@@ -76,6 +78,7 @@ def void_no_crash():
 class MyUpdates:
     def __init__(self):
 
+        self.seenHunts = dict()
         self.mail = imaplib.IMAP4_SSL('imap.gmail.com')
         self.mail.login(settings.Settings().rpmail_username, settings.Settings().rpmail_pass)
         self.mail.select('INBOX')
@@ -445,12 +448,88 @@ class MyUpdates:
             for chat_id in self._nieuws:
                 self.bot.sendMessage(chat_id, 'Er is een mail van de organisatie:\n' + str(update))
 
-
-
     @void_no_crash()
     def update_hunts(self):
-        pass
+        h=get_hunts()
+        hd = to_dict(*h)
+        for k, v in enumerate(hd):
+            if k not in self.seenHunts:
+                if str(k).lower().startswith('a'):
+                    for chat_id in self._A:
+                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                elif str(k).lower().startswith('b'):
+                    for chat_id in self._B:
+                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                elif str(k).lower().startswith('c'):
+                    for chat_id in self._C:
+                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                elif str(k).lower().startswith('d'):
+                    for chat_id in self._D:
+                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                elif str(k).lower().startswith('e'):
+                    for chat_id in self._E:
+                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                elif str(k).lower().startswith('f'):
+                    for chat_id in self._F:
+                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                self.seenHunts[k] = v
+            else:
+                if v['status'] != self.seenHunts[k]['status']:
+                    if str(k).lower().startswith('a'):
+                        for chat_id in self._A:
+                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
+                                                 ' is aangepast op de website. Van ' + str(self.seenHunts[k]['status'])+
+                                                 ' naar ' + str(v['status']) +'. Het aantal punten voor deze hunt is nu:'+
+                                                 str(v['punten']))
+                    elif str(k).lower().startswith('b'):
+                        for chat_id in self._B:
+                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
+                                                 ' is aangepast op de website. Van ' + str(self.seenHunts[k]['status'])+
+                                                 ' naar ' + str(v['status']) +'. Het aantal punten voor deze hunt is nu:'+
+                                                 str(v['punten']))
+                    elif str(k).lower().startswith('c'):
+                        for chat_id in self._C:
+                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
+                                                 ' is aangepast op de website. Van ' + str(
+                                self.seenHunts[k]['status']) +
+                                                 ' naar ' + str(
+                                v['status']) + '. Het aantal punten voor deze hunt is nu:' +
+                                                 str(v['punten']))
+                    elif str(k).lower().startswith('d'):
+                        for chat_id in self._D:
+                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
+                                                 ' is aangepast op de website. Van ' + str(
+                                self.seenHunts[k]['status']) +
+                                                 ' naar ' + str(
+                                v['status']) + '. Het aantal punten voor deze hunt is nu:' +
+                                                 str(v['punten']))
+                    elif str(k).lower().startswith('e'):
+                        for chat_id in self._E:
+                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
+                                                 ' is aangepast op de website. Van ' + str(
+                                self.seenHunts[k]['status']) +
+                                                 ' naar ' + str(
+                                v['status']) + '. Het aantal punten voor deze hunt is nu:' +
+                                                 str(v['punten']))
+                    elif str(k).lower().startswith('f'):
+                        for chat_id in self._F:
+                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
+                                                 ' is aangepast op de website. Van ' + str(
+                                self.seenHunts[k]['status']) +
+                                                 ' naar ' + str(
+                                v['status']) + '. Het aantal punten voor deze hunt is nu:' +
+                                                 str(v['punten']))
+                    else:
+                        for chat_id in self._nieuws:
+                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
+                                                 ' is aangepast op de website. Van ' + str(
+                                self.seenHunts[k]['status']) +
+                                                 ' naar ' + str(
+                                v['status']) + '. Het aantal punten voor deze hunt is nu:' +
+                                                 str(v['punten']))
+                    self.seenHunts[k] = v
 
+    @void_no_crash()
     def error(self, e, func_name):
         logging.info('updates error send to user:' + str(e) + ' ' + func_name)
         for chat_id in self._error:
