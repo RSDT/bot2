@@ -260,7 +260,8 @@ def nieuws_updates(bot, update):
               change_niews_updates)
         bot.sendMessage(chat_id, "Moeten nieuws updates aan of uit staan?\n "
                                  "aan/uit",
-                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+                        reply_to_message_id=update.message.message_id)
+        # TODO add a keyboard
         Updates.get_updates().botan.track(update.message, 'nieuws_update')
     except MultipleConversationsError:
         bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit  "
@@ -364,8 +365,11 @@ def deelgebied_updates(bot, update):
     try:
         State(bot, chat_id, user_id, deelgebied_conversation,
               change_dg_updates)
-        bot.sendMessage(chat_id, "Voor welk deelgebied moeten updates aan of uit staan?\nA, B, C, D, E, F, X",
-                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+        message = "Voor welk deelgebied moeten updates aan of uit staan?\n " \
+                  "A, B, C, D, E, F, X"
+        bot.sendMessage(chat_id, message,
+                        reply_to_message_id=update.message.message_id)
+        # TODO add a keyboard
         Updates.get_updates().botan.track(update.message, 'deelgebied')
     except MultipleConversationsError:
         bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
@@ -393,7 +397,8 @@ def error_updates(bot, update):
               change_error_updates)
         bot.sendMessage(chat_id, "Moeten error updates aan of uitstaan?\n "
                                  "aan/uit",
-                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+                        reply_to_message_id=update.message.message_id)
+        # TODO add a keyboard
         Updates.get_updates().botan.track(update.message, 'error')
     except MultipleConversationsError:
         bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
@@ -420,7 +425,8 @@ def hint_updates(bot, update):
               change_hints_updates)
         bot.sendMessage(chat_id, "Moeten hint updates aan of uit staan?\n "
                                  "aan/uit",
-                        reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+                        reply_to_message_id=update.message.message_id)
+        # TODO add a keyboard
         Updates.get_updates().botan.track(update.message, 'hints')
     except MultipleConversationsError:
         bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
@@ -441,13 +447,13 @@ def photo_updates(bot, update):
     :return:
     """
     chat_id = update.message.chat_id
-    user_id = update.message.from_user.id
     try:
         # State(bot, chat_id, user_id, PhotoUpdates, change_opdracht_updates)
         # TODO implement this
         # bot.sendMessage(chat_id, "Moeten hint updates aan of uit staan?\
         # naan/uit",
-        #                reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+        #                reply_to_message_id=update.message.message_id)
+        #  TODO add a keyboard
         bot.sendMessage(chat_id, 'Deze functie doet nog niks')
         Updates.get_updates().botan.track(update.message, 'fotos')
     except MultipleConversationsError:
@@ -469,12 +475,13 @@ def sc_groep(bot, update):
     :return:
     """
     chat_id = update.message.chat_id
-    user_id = update.message.from_user.id
     try:
         # State(bot, chat_id, user_id, PhotoUpdates, change_opdracht_updates)
         # TODO implement this
-        # bot.sendMessage(chat_id, "Moeten hint updates aan of uit staan?\naan/uit",
-        #                reply_to_message_id=update.message.message_id)  # TODO add a keyboard
+        # bot.sendMessage(chat_id, "Moeten hint updates aan of uit staan?\
+        # naan/uit",
+        #                reply_to_message_id=update.message.message_id)  #
+        # TODO add a keyboard
         bot.sendMessage(chat_id, 'Deze functie doet nog niks')
         Updates.get_updates().botan.track(update.message, 'groep')
     except MultipleConversationsError:
@@ -528,8 +535,10 @@ def deelgebied_conversation(bot, update, state):
         if update.message.text in ['A', 'B', 'C', 'D', 'E', 'F', 'X', 'a',
                                    'b', 'c', 'd', 'e', 'f', 'x']:
             state['deelgebied'] = update.message.text
-            bot.sendMessage(update.message.chat_id,
-                            update.message.from_user.name + ' moeten updates aan of uit staan voor dit deelgebied?')
+            username = update.message.from_user.name
+            message = username + ' moeten updates aan of uit staan voor dit ' \
+                                 'deelgebied?'
+            bot.sendMessage(update.message.chat_id, message)
             state.next_state()
         else:
             bot.sendMessage(update.message.chat_id,
@@ -541,8 +550,9 @@ def deelgebied_conversation(bot, update, state):
         if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
             state['status'] = update.message.text
             state.done()
-            bot.sendMessage(update.message.chat_id,
-                            update.message.from_user.name + ' De updateszijn aan of uit gezet')
+            username = update.message.from_user.name
+            message = username + ' De updateszijn aan of uit gezet'
+            bot.sendMessage(update.message.chat_id, message)
         else:
             bot.sendMessage(update.message.chat_id,
                             update.message.from_user.name +
@@ -557,9 +567,9 @@ def add_error_listener_conversation(bot, update, state):
         if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
             state['status'] = update.message.text
             state.done()
-            bot.sendMessage(update.message.chat_id,
-                            update.message.from_user.name + ' De Error '
-                                                            'updates zijn aan of uit gezet')
+            username = update.message.from_user.name
+            message = username + ' De Error updates zijn aan of uit gezet'
+            bot.sendMessage(update.message.chat_id, message)
         else:
             bot.sendMessage(update.message.chat_id,
                             update.message.from_user.name +
@@ -574,9 +584,9 @@ def add_nieuws_listener_conversation(bot, update, state):
         if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
             state['status'] = update.message.text
             state.done()
-            bot.sendMessage(update.message.chat_id,
-                            update.message.from_user.name + ' De nieuws '
-                                                            'updates zijn aan of uit gezet')
+            username = update.message.from_user.name
+            message = username + ' De nieuws updates zijn aan of uit gezet'
+            bot.sendMessage(update.message.chat_id, message)
         else:
             bot.sendMessage(update.message.chat_id,
                             update.message.from_user.name +
@@ -598,7 +608,6 @@ def phpsessid_conversation(bot, update, state):
 @void_no_crash()
 def add_opdracht_listener_conversation(bot, update, state):
     s = state.get_state()
-    user_id =
     if s == 0:
         if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
             state['status'] = update.message.text
@@ -607,7 +616,7 @@ def add_opdracht_listener_conversation(bot, update, state):
                             update.message.from_user.name + ' De opdracht '
                                                             'updates zijn '
                                                             'aan of uit gezet')
-        else: call
+        else:
             bot.sendMessage(update.message.chat_id,
                             update.message.from_user.name +
                             ' kies uit aan of uit.\n' +
@@ -646,7 +655,6 @@ def bug_conversation(bot, update, state):
                   'bug_conversation'
         Updates.get_updates().error(Exception(message), 'bug_conversation')
     bot.sendMessage(update.message.chat_id, message)
-
 
 
 ###############################################################################
@@ -706,8 +714,8 @@ def bug_done(state):
     updates = Updates.get_updates()
     message = 'Er is bug gemeld.\n door: {van}\n aangeroepen met: '\
               '{command}\n het gaat over: {about}\n de text:\n {message}'
-    message= message.format(van=state['from'], command=state['command'],
-                            about=state['about'], message=state['message'])
+    message = message.format(van=state['from'], command=state['command'],
+                             about=state['about'], message=state['message'])
     updates.error(Exception(message), 'bug_done')
     updates.bot.sendMessage(-158130982, message)
 
