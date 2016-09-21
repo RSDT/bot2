@@ -32,19 +32,26 @@ def authenticate():
             user_id = update.message.from_user.id
             username = update.message.from_user.name
             chat_name = update.message.chat.title or (
-                update.message.chat.first_name + ' ' + update.message.chat.last_name)
-            if authenticator.authenticate_chat(user_id, chat_id, settings.Settings().SLEUTEL, username, chat_name):
+                update.message.chat.first_name + ' ' +
+                update.message.chat.last_name)
+            if authenticator.authenticate_chat(user_id, chat_id,
+                                               settings.Settings().SLEUTEL,
+                                               username, chat_name):
                 return func(bot, update)
             else:
                 if type(chat_id) == int and chat_id > 0:
                     bot.sendMessage(chat_id,
-                                    "je bent niet geverifierd! stuur een berichtje" +
-                                    " in een geverifiërde groepschat of naar de HB om je te verifiëren.")
+                                    "je bent niet geverifierd! stuur een "
+                                    "berichtje in een geverifiërde "
+                                    "groepschat of naar de HB om je te "
+                                    "verifiëren.")
                 else:
+                    mesg_id = update.message.message_id
                     bot.sendMessage(chat_id,
-                                    "Deze groepsapp is niet geverifeerd." +
-                                    " Stuur een berichtje naar de HB om deze groep te verifiëren.",
-                                    reply_to_message_id=update.message.message_id)
+                                    "Deze groepsapp is niet geverifeerd. "
+                                    "Stuur een berichtje naar de HB om deze "
+                                    "groep te verifiëren.",
+                                    reply_to_message_id=mesg_id)
                 return None
         return call
 

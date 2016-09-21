@@ -4,12 +4,13 @@ import logging
 url = 'https://mattijnkreuzen.nl/tg_users/telegramusers.php'
 
 
-def authenticate_chat(tg_user_id, chat_id, SLEUTEL, username="unkown", chat_naam="unkown"):
+def authenticate_chat(tg_user_id, chat_id, sleutel, username="unkown",
+                      chat_naam="unkown"):
     try:
         data = {
             'tg_user_id': tg_user_id,
             'chat_id': chat_id,
-            'SLEUTEL': SLEUTEL,
+            'SLEUTEL': sleutel,
             'username': username,
             'chat_naam': chat_naam
         }

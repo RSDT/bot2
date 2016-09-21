@@ -3,6 +3,10 @@ import re
 
 
 class TableHTMLParser(HTMLParser):
+    def error(self, message):
+        import Updates
+        Updates.get_updates().error(Exception(str(message)), 'table parser')
+
     def __init__(self, *args, **kwargs):
         HTMLParser.__init__(self, *args, **kwargs)
         self.is_tabel = False
@@ -42,15 +46,17 @@ class TableHTMLParser(HTMLParser):
                 self.current_data += data
 
     def print_tables(self):
-        for table  in self.tables:
+        for table in self.tables:
             print("[")
             for row in table:
                 try:
-                    print ("    " + str(row))
-                except:
-                    print('-------------------------------------------------------------------------------')
+                    print("    " + str(row))
+                except Exception as e:
+                    print('print_tables error', e)
+                    # TODO dit naar een logging.debug schrijven
+                    print('--------------------------------------------------')
             print("]")
-            print ("\n")
+            print("\n")
 
     def fix_tables(self):
         for table in self.tables:
@@ -64,19 +70,22 @@ class TableHTMLParser(HTMLParser):
             for row in table:
                 for i, elem in enumerate(row):
                     row[i] = str(row[i])
-                    if type(row[i]) == type("helo"):
+                    if isinstance(row[i], str):
                         row[i] = row[i].replace(',', '')
                         row[i] = row[i].replace("\xa0", '')
-                        p= re.compile('\[\d+\]')
-                        row[i] = p.sub('',row[i])
+                        p = re.compile('\[\d+\]')
+                        row[i] = p.sub('', row[i])
                         if row[i] == 'unknown' or row[i] == 'None':
                             row[i] = None
                     try:  # try to make a value numerical
                         row[i] = float(row[i])
                         if int(row[i]) == row[i]:
                             row[i] = int(row[i])
-                    except:  # if it fails just keep it the type it was.
+                    except Exception as e:  # if it fails just keep it the
+                        # type it was.
+                        print(e)
                         pass
+
 
 def to_dict(table, collumns, identifier):
     """
@@ -98,11 +107,12 @@ def to_dict(table, collumns, identifier):
         d[temp[identifier]] = temp
     return d
 
+
 def print_table(table):
     print('[')
     try:
         for key in table.keys():
-            print('\t'+str(table[key]))
+            print('\t' + str(table[key]))
     except AttributeError:
         for row in table:
             print('\t' + str(row))

@@ -4,7 +4,8 @@ __all__ = ['SCORELIJST', 'OPDRACHT', 'OPDRACHTEN',
            'HINT', 'HINTS', 'NIEUWS',
            'NIEUWSLIJST', 'VOSSEN', 'Response']
 
-OPDRACHT, OPDRACHTEN, HINT, HINTS, NIEUWS, NIEUWSLIJST, VOSSEN, SCORELIJST = range(8)
+OPDRACHT, OPDRACHTEN, HINT, HINTS, NIEUWS, NIEUWSLIJST, VOSSEN, SCORELIJST =\
+    range(8)
 
 
 class Response:
@@ -64,8 +65,10 @@ class Response:
             data += '\n]'
         else:
             data = str(self.data)
-        return '{\ntype: ' + str(self.type) + ',\nversion: ' + str(self.version) +\
-               ',\nlast_update: ' + str(self.last_update) + ',\ndata:\n' + data + '\n}'
+        return '{\ntype: ' + str(self.type) + ',\nversion: ' + str(
+            self.version) +\
+               ',\nlast_update: ' + str(self.last_update) + ',\ndata:\n' + \
+               data + '\n}'
 
 
 class Base:

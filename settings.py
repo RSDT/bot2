@@ -50,8 +50,8 @@ class Settings:
         self.rp_pass = tokens.rp_pass
         self.botan_key = tokens.bot_key
         self.firebase_key = tokens.firebase_key
-        self.base_opdracht_url = 'http://www.jotihunt.net/groep/opdracht.php?MID='
-        self.base_hint_url = 'http://www.jotihunt.net/groep/opdracht.php?MID='
-        self.base_nieuws_url = 'http://www.jotihunt.net/groep/opdracht.php?MID='
+        self.base_opdracht_url = tokens.base_opdracht_url
+        self.base_hint_url = tokens.base_hint_url
+        self.base_nieuws_url = tokens.base_nieuws_url
         self.rpmail_username = tokens.rpmail_username
         self.rpmail_pass = tokens.rpmail_pass

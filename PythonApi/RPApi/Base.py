@@ -1,12 +1,14 @@
 import requests
-from PythonApi.Base.Exceptions import VerificationError, BannedError, NoDataError, UndocumatedStatusCodeError, IAmATheaPotError
+from PythonApi.Base.Exceptions import VerificationError, BannedError, \
+    NoDataError, UndocumatedStatusCodeError, IAmATheaPotError
 from hashlib import sha1
 import json
 import time
 
 
-def parse_time(time):
-    return time
+def parse_time(tijd):
+    # todo schrijf deze functie
+    return tijd
 
 
 class Api:
@@ -33,7 +35,8 @@ class Api:
         return Api.instances[username]
 
     def _send_request(self, root, functie="", data=None):
-        if self.last_update is None or time.time() - self.last_update > 24 * 60 * 60:
+        max_t = 24 * 60 * 60  # 1 dag
+        if self.last_update is None or time.time() - self.last_update > max_t:
             self.login()
         else:
             self.last_update = time.time()
@@ -52,10 +55,7 @@ class Api:
         elif r.status_code == 418:
             raise IAmATheaPotError(r.content)
         elif r.status_code == 200:
-            try:
                 return r.json()
-            except:
-                return
         else:
             raise UndocumatedStatusCodeError((r.status_code, r.content))
 
@@ -65,43 +65,43 @@ class Api:
         data = self._send_request(root, functie)
         return data
 
-    def hunter_all(self, time=None):
+    def hunter_all(self, tijd=None):
         root = 'hunter'
         functie = 'all/'
-        if time is not None:
-            functie += parse_time(time) + '/'
+        if tijd is not None:
+            functie += parse_time(tijd) + '/'
         data = self._send_request(root, functie)
         return data
 
-    def hunter_tail(self, hunter, time=None):
+    def hunter_tail(self, hunter, tijd=None):
         root = 'hunter'
         functie = 'naam/tail/' + str(hunter) + '/'
-        if time is not None:
-            functie += parse_time(time) + '/'
+        if tijd is not None:
+            functie += parse_time(tijd) + '/'
         data = self._send_request(root, functie)
         return data
 
-    def hunter_andere(self, hunter, time=None):
+    def hunter_andere(self, hunter, tijd=None):
         root = 'hunter'
         functie = 'andere/' + str(hunter) + '/'
-        if time is not None:
-            functie += parse_time(time) + '/'
+        if tijd is not None:
+            functie += parse_time(tijd) + '/'
         data = self._send_request(root, functie)
         return data
 
-    def hunter_single_location(self, id):
+    def hunter_single_location(self, hunter_id):
         root = 'hunter'
-        functie = str(id) + '/'
+        functie = str(hunter_id) + '/'
         data = self._send_request(root, functie)
         return data
 
-    def vos(self, team, time=None, id=None):
-        if id is None and time is None:
+    def vos(self, team, tijd=None, vos_id=None):
+        if vos_id is None and tijd is None:
             result = self._vos_last(team)
-        elif id is not None and time is None:
-            result = self._vos_single_location(team, id)
-        elif id is None and time is not None:
-            result = self._vos_all(team, time)
+        elif vos_id is not None and tijd is None:
+            result = self._vos_single_location(team, vos_id)
+        elif vos_id is None and tijd is not None:
+            result = self._vos_all(team, tijd)
         else:
             result = None
         return result
@@ -112,17 +112,17 @@ class Api:
         data = self._send_request(root, functie)
         return data
 
-    def _vos_single_location(self, team, id):
+    def _vos_single_location(self, team, vos_id):
         root = 'vos'
-        functie = team + '/' + str(id) + '/'
+        functie = team + '/' + str(vos_id) + '/'
         data = self._send_request(root, functie)
         return data
 
-    def _vos_all(self, team, time):
+    def _vos_all(self, team, tijd):
         root = 'vos'
         functie = team + '/'
-        if time is not None:
-            functie += parse_time(time) + '/'
+        if tijd is not None:
+            functie += parse_time(tijd) + '/'
         data = self._send_request(root, functie)
         return data
 
@@ -166,7 +166,11 @@ class Api:
             hunternaam = self.username
         else:
             hunternaam = str(self.hunternaam)
-        data = {'SLEUTEL': self.api_key, 'hunter':hunternaam, 'latitude': str(lat), 'longitude': str(lon), 'icon': str(icon)}
+        data = {'SLEUTEL': self.api_key,
+                'hunter': hunternaam,
+                'latitude': str(lat),
+                'longitude': str(lon),
+                'icon': str(icon)}
         root = 'hunter'
         self._send_request(root, data=data)
 
@@ -176,6 +180,9 @@ class Api:
         else:
             hunternaam = str(self.hunternaam)
         root = 'vos'
-        data = {'SLEUTEL': self.api_key, 'team': team, 'hunter': hunternaam, 'latitude': str(lat),
+        data = {'SLEUTEL': self.api_key,
+                'team': team,
+                'hunter': hunternaam,
+                'latitude': str(lat),
                 'longitude': str(lon), 'icon': str(icon), 'info': str(info)}
         self._send_request(root, data=data)

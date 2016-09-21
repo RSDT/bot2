@@ -40,7 +40,8 @@ class Botan(object):
             urlopen(request)
             return True
         except HTTPError as error:
-            self.logger.warn('Botan track error ' + str(error.code) + ':' + error.read().decode(
+            self.logger.warn('Botan track error ' + str(error.code) + ':' +
+                             error.read().decode(
                 'utf-8'))
             return False
         except URLError as error:
@@ -60,7 +61,8 @@ class Botan(object):
                 shortened_url = response.read()
             return shortened_url.decode('utf-8')
         except HTTPError as error:
-            self.logger.warn('Botan track error ' + str(error.code) + ':' + error.read().decode(
+            self.logger.warn('Botan track error ' + str(error.code) + ':' +
+                             error.read().decode(
                 'utf-8'))
             return None
         except URLError as error:

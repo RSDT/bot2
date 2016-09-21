@@ -1,4 +1,3 @@
-# from telegram.contrib.botan import Botan
 from MyBotan import Botan
 from PythonApi.RPApi.Base import Api as RPApi
 import settings
@@ -7,37 +6,107 @@ import time
 import PythonApi.jotihunt.Retrievers as jotihuntApi
 import pickle
 import os
-from telegram.parsemode import ParseMode as parsemode
+from telegram.parsemode import ParseMode
 import re
 import imaplib
-from PythonApi.scraperApi.Jotihuntscraper import get_opdrachten, get_hunts
+from PythonApi.scraperApi.Jotihuntscraper import get_hunts
 from PythonApi.scraperApi.webscraper import to_dict
 
 UPDATER_FILE = 'updater.jhu'
 
-ALPHA, BRAVO, CHARLIE, DELTA, ECHO, FOXTROT, XRAY, PHOTOS, OPDRACHTEN, NIEUWS, ERROR, HINTS = range(12)
+ALPHA, BRAVO, CHARLIE, DELTA, ECHO, FOXTROT, XRAY, PHOTOS, OPDRACHTEN, \
+    NIEUWS, ERROR, HINTS = range(12)
 my_updates_instance = None
-__all__ = ['get_updates', 'ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT', 'XRAY',
-           'PHOTOS', 'OPDRACHTEN', 'NIEUWS', 'ERROR', 'HINTS']
+__all__ = ['get_updates', 'ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO',
+           'FOXTROT', 'XRAY', 'PHOTOS', 'OPDRACHTEN', 'NIEUWS', 'ERROR',
+           'HINTS']
 
-status_plaatjes = {'a': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADOAADxPsqAXmyBBClXTd4Ag'},
-                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADNAADxPsqAWy_jDGSfM8VAg'},
-                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADNgADxPsqAW5L5FGEVeZsAg'}},
-                   'c': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADTAADxPsqAYLV3juZLpBdAg'},
-                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADSgADxPsqAT-u5My8rm3gAg'},
-                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADRgADxPsqAQV4dBO6m83XAg'}},
-                   'b': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADQAADxPsqAe0nAoB-ZMyOAg'},
-                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADQgADxPsqAYIFsuIiE6hzAg'},
-                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADRAADxPsqAWxDH1LIGSXKAg'}},
-                   'e': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADWgADxPsqAUL07wYDRvidAg'},
-                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADVAADxPsqAQsjZhRr4lEnAg'},
-                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADWAADxPsqATm-pA-vdphAAg'}},
-                   'd': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADTgADxPsqAZx6xRcZie8dAg'},
-                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADUgADxPsqAb2HyQa_q_n8Ag'},
-                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADUAADxPsqAQmw5iS__C7yAg'}},
-                   'f': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADXgADxPsqATT7K_u22oL7Ag'},
-                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADXAADxPsqAYLGQPHFp1xLAg'},
-                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADVgADxPsqAffXkv_Pldg-Ag'}}}
+status_plaatjes = {
+    'a': {
+        'groen': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADOAADxPsqAXmyBBClXTd4Ag'
+        },
+        'rood': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADNAADxPsqAWy_jDGSfM8VAg'
+        },
+        'oranje': {''
+                   'type': 'sticker',
+                   'file_id': 'BQADBAADNgADxPsqAW5L5FGEVeZsAg'
+                   }
+    },
+    'c': {
+        'groen': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADTAADxPsqAYLV3juZLpBdAg'
+        },
+        'rood': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADSgADxPsqAT-u5My8rm3gAg'
+        },
+        'oranje': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADRgADxPsqAQV4dBO6m83XAg'
+        }
+    },
+    'b': {
+        'groen': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADQAADxPsqAe0nAoB-ZMyOAg'
+        },
+        'rood': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADQgADxPsqAYIFsuIiE6hzAg'
+        },
+        'oranje': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADRAADxPsqAWxDH1LIGSXKAg'
+        }
+    },
+    'e': {
+        'groen': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADWgADxPsqAUL07wYDRvidAg'
+        },
+        'rood': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADVAADxPsqAQsjZhRr4lEnAg'
+        },
+        'oranje': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADWAADxPsqATm-pA-vdphAAg'
+        }
+    },
+    'd': {
+        'groen': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADTgADxPsqAZx6xRcZie8dAg'
+        },
+        'rood': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADUgADxPsqAb2HyQa_q_n8Ag'
+        },
+        'oranje': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADUAADxPsqAQmw5iS__C7yAg'
+        }
+    },
+    'f': {
+        'groen': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADXgADxPsqATT7K_u22oL7Ag'
+        },
+        'rood': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADXAADxPsqAYLGQPHFp1xLAg'
+        },
+        'oranje': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADVgADxPsqAffXkv_Pldg-Ag'
+        }
+    }
+}
 
 
 def get_updates():
@@ -80,7 +149,8 @@ class MyUpdates:
 
         self.seenHunts = dict()
         self.mail = imaplib.IMAP4_SSL('imap.gmail.com')
-        self.mail.login(settings.Settings().rpmail_username, settings.Settings().rpmail_pass)
+        self.mail.login(settings.Settings().rpmail_username,
+                        settings.Settings().rpmail_pass)
         self.mail.select('INBOX')
         self.bot = None
         self.botan = Botan(settings.Settings().botan_key)
@@ -118,7 +188,8 @@ class MyUpdates:
         self.lastStatus = None
         self.seenMail = set()
         self.lastHint = None
-        self.rp_api = RPApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+        self.rp_api = RPApi.get_instance(settings.Settings().rp_username,
+                                         settings.Settings().rp_pass)
 
     def to_dict(self):
         return {'A': self._A,
@@ -143,7 +214,9 @@ class MyUpdates:
 
     @void_no_crash()
     def update(self):
-        if self.has_bot() and (self._last_update is None or abs(time.time() - self._last_update) > 60):
+        if self.has_bot() and \
+                (self._last_update is None or
+                 abs(time.time() - self._last_update) > 60):
             self.update_vos_last()
             self.update_vos_status()
             self.update_nieuws()
@@ -184,7 +257,7 @@ class MyUpdates:
         if chat_id in self._X:
             yield 'X-Ray'
         if chat_id in self._error:
-            yield  'Errors'
+            yield 'Errors'
         if chat_id in self._nieuws:
             yield 'Nieuws'
         if chat_id in self._opdrachten:
@@ -304,11 +377,16 @@ class MyUpdates:
                                      "extra info: " + vos['extra'] + '\n' +
                                      'opmerking/adres: ' + vos['opmerking'])
         else:
-            m = self.bot.sendMessage(chat_id, "Er is een Hint ingevoerd voor " + str(deelgebied) + '\n' +
-                                     'extra info: ' + str(vos['extra']) + '\n' +
-                                     'opmerking/adres: ' + str(vos['opmerking']))
-        self.bot.sendLocation(chat_id, latitude=vos['latitude'], longitude=vos['longitude'])
-        self.botan.track(m, 'newLoc_'+deelgebied + '_' + vos['icon'])
+            m = self.bot.sendMessage(chat_id,
+                                     "Er is een Hint ingevoerd voor " + str(
+                                         deelgebied) + '\n' +
+                                     'extra info: ' + str(
+                                         vos['extra']) + '\n' +
+                                     'opmerking/adres: ' + str(
+                                         vos['opmerking']))
+        self.bot.sendLocation(chat_id, latitude=vos['latitude'],
+                              longitude=vos['longitude'])
+        self.botan.track(m, 'newLoc_' + deelgebied + '_' + vos['icon'])
 
     @void_no_crash()
     def update_vos_status(self):
@@ -318,7 +396,8 @@ class MyUpdates:
         def send_update(chat_id, vos, new_status):
             if new_status is None:
                 return
-            m = self.bot.sendSticker(chat_id, status_plaatjes[vos][new_status]['file_id'])
+            m = self.bot.sendSticker(chat_id, status_plaatjes[vos][new_status][
+                'file_id'])
             self.botan.track(m, 'vos_status_' + vos + '_' + new_status)
             send_cloudmessage(vos, new_status)
 
@@ -359,6 +438,7 @@ class MyUpdates:
             for chat_id in self._X:
                 vos = 'x'
                 send_update(chat_id, vos, extract_status(vos))
+
         if self.lastStatus is None:
             send_a()
             send_b()
@@ -370,17 +450,23 @@ class MyUpdates:
             self.lastStatus = curr_status
         else:
             for k, item in enumerate(curr_status):
-                if item.team == 'Alpha' and item['status'] != extract_status('a')['status']:
+                if item.team == 'Alpha' and item['status'] != \
+                        extract_status('a')['status']:
                     send_a()
-                if item.team == 'Bravo' and item['status'] != extract_status('b')['status']:
+                if item.team == 'Bravo' and item['status'] != \
+                        extract_status('b')['status']:
                     send_b()
-                if item.team == 'Charlie' and item['status'] != extract_status('c')['status']:
+                if item.team == 'Charlie' and item['status'] != \
+                        extract_status('c')['status']:
                     send_c()
-                if item.team == 'Delta' and item['status'] != extract_status('d')['status']:
+                if item.team == 'Delta' and item['status'] != \
+                        extract_status('d')['status']:
                     send_d()
-                if item.team == 'Echo' and item['status'] != extract_status('e')['status']:
+                if item.team == 'Echo' and item['status'] != \
+                        extract_status('e')['status']:
                     send_e()
-                if item.team == 'Foxtrot' and item['status'] != extract_status('f')['status']:
+                if item.team == 'Foxtrot' and item['status'] != \
+                        extract_status('f')['status']:
                     send_f()
                 self.lastStatus = curr_status
 
@@ -389,10 +475,12 @@ class MyUpdates:
         nieuws = jotihuntApi.get_nieuws_lijst().data
         if nieuws and nieuws[0] != self.lastNieuws:
             item = nieuws[0].data
-            message = 'Er is nieuws met de titel [{title}]({url})'.format(title=item.titel,
-                                                                          url=settings.Settings().base_nieuws_url + item.ID)
+            message = 'Er is nieuws met de titel [{title}]({url})'.format(
+                title=item.titel,
+                url=settings.Settings().base_nieuws_url + item.ID)
             for chat_id in self._nieuws:
-                self.bot.sendMessage(chat_id, message, parse_mode=parsemode.MARKDOWN)
+                self.bot.sendMessage(chat_id, message,
+                                     parse_mode=ParseMode.MARKDOWN)
             self.lastNieuws = nieuws[0]
 
     @void_no_crash()
@@ -400,10 +488,12 @@ class MyUpdates:
         opdrachten = jotihuntApi.get_opdrachten().data
         if opdrachten and opdrachten[0] != self.lastOpdracht:
             opdracht = opdrachten[0].data
-            message = 'Er is nieuws met de titel [{title}]({url})'.format(title=opdracht.titel,
-                                                                          url=settings.Settings().base_opdracht_url + opdracht.ID)
+            message = 'Er is nieuws met de titel [{title}]({url})'.format(
+                title=opdracht.titel,
+                url=settings.Settings().base_opdracht_url + opdracht.ID)
             for chat_id in self._opdrachten:
-                self.bot.sendMessage(chat_id, message, parse_mode=parsemode.MARKDOWN)
+                self.bot.sendMessage(chat_id, message,
+                                     parse_mode=ParseMode.MARKDOWN)
             self.lastOpdracht = opdrachten[0]
 
     @void_no_crash()
@@ -411,10 +501,13 @@ class MyUpdates:
         hints = jotihuntApi.get_hints().data
         if hints and hints[0] != self.lastHint:
             hint = hints[0].data
-            message = 'Er is een hint met de titel [{title}]({url})'.format(title=hint.titel,
-                                                                          url=settings.Settings().base_hint_url + hint.ID)
+            message = 'Er is een hint met de titel [{title}]({url})'
+            message = message.format(title=hint.titel,
+                                     url=settings.Settings().base_hint_url +
+                                     hint.ID)
             for chat_id in self._hints:
-                self.bot.sendMessage(chat_id, message, parse_mode=parsemode.MARKDOWN)
+                self.bot.sendMessage(chat_id, message,
+                                     parse_mode=ParseMode.MARKDOWN)
             self.lastHint = hints[0]
 
     @void_no_crash()
@@ -430,7 +523,8 @@ class MyUpdates:
             j = bytes(str(i), 'utf8')
             try:
                 status, mail = self.mail.fetch(j, '(RFC822)')
-            except:
+            except Exception as e:
+                self.error(e, 'update_mail')
                 break
             if mail[0] is None:
                 break
@@ -439,94 +533,81 @@ class MyUpdates:
             if result is not None and result.group(0) not in self.seenMail:
                 found.append(result.group(0))
                 self.seenMail.add(result)
-            result = re.search('Jullie tegenhunt is begonnen(.)*?Koffie of iets lekkers aanbieden mag uiteraard wel', raw_text, re.S)
+            result = re.search(
+                'Jullie tegenhunt(.)*?mag uiteraard wel',
+                raw_text, re.S)
             if result is not None and result.group(0) not in self.seenMail:
                 found.append(result.group(0))
                 self.seenMail.add(result.group(0))
-            i+=1
+            i += 1
         for update in found:
             for chat_id in self._nieuws:
-                self.bot.sendMessage(chat_id, 'Er is een mail van de organisatie:\n' + str(update))
+                self.bot.sendMessage(chat_id,
+                                     'Er is een mail van de organisatie:\n'
+                                     + str(update))
 
     @void_no_crash()
     def update_hunts(self):
-        h=get_hunts()
+        h = get_hunts()
         hd = to_dict(*h)
         for k, v in enumerate(hd):
             if k not in self.seenHunts:
                 if str(k).lower().startswith('a'):
                     for chat_id in self._A:
-                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                            k) + ' is ingevoerd op de website')
                 elif str(k).lower().startswith('b'):
                     for chat_id in self._B:
-                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                            k) + ' is ingevoerd op de website')
                 elif str(k).lower().startswith('c'):
                     for chat_id in self._C:
-                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                            k) + ' is ingevoerd op de website')
                 elif str(k).lower().startswith('d'):
                     for chat_id in self._D:
-                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                            k) + ' is ingevoerd op de website')
                 elif str(k).lower().startswith('e'):
                     for chat_id in self._E:
-                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                            k) + ' is ingevoerd op de website')
                 elif str(k).lower().startswith('f'):
                     for chat_id in self._F:
-                        self.bot.sendMessage(chat_id, 'code: '+ str(k) + ' is ingevoerd op de website')
+                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                            k) + ' is ingevoerd op de website')
                 self.seenHunts[k] = v
             else:
                 if v['status'] != self.seenHunts[k]['status']:
+                    message = 'de status van code: {code} is aangepast op de website. Van {old_status} naar {new_status}. Het aantal punten voor deze hunt is nu: {punten}'
+                    message = message.format(code=str(k),
+                                             old_status=str(
+                                                 self.seenHunts[k][
+                                                     'status']),
+                                             new_status=str(v['status']
+                                                            ),
+                                             puntten=str(v['punten']))
                     if str(k).lower().startswith('a'):
                         for chat_id in self._A:
-                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
-                                                 ' is aangepast op de website. Van ' + str(self.seenHunts[k]['status'])+
-                                                 ' naar ' + str(v['status']) +'. Het aantal punten voor deze hunt is nu:'+
-                                                 str(v['punten']))
+                            self.bot.sendMessage(chat_id, message)
                     elif str(k).lower().startswith('b'):
                         for chat_id in self._B:
-                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
-                                                 ' is aangepast op de website. Van ' + str(self.seenHunts[k]['status'])+
-                                                 ' naar ' + str(v['status']) +'. Het aantal punten voor deze hunt is nu:'+
-                                                 str(v['punten']))
+                            self.bot.sendMessage(chat_id, message)
                     elif str(k).lower().startswith('c'):
                         for chat_id in self._C:
-                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
-                                                 ' is aangepast op de website. Van ' + str(
-                                self.seenHunts[k]['status']) +
-                                                 ' naar ' + str(
-                                v['status']) + '. Het aantal punten voor deze hunt is nu:' +
-                                                 str(v['punten']))
+                            self.bot.sendMessage(chat_id, message)
                     elif str(k).lower().startswith('d'):
                         for chat_id in self._D:
-                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
-                                                 ' is aangepast op de website. Van ' + str(
-                                self.seenHunts[k]['status']) +
-                                                 ' naar ' + str(
-                                v['status']) + '. Het aantal punten voor deze hunt is nu:' +
-                                                 str(v['punten']))
+                            self.bot.sendMessage(chat_id, message)
                     elif str(k).lower().startswith('e'):
                         for chat_id in self._E:
-                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
-                                                 ' is aangepast op de website. Van ' + str(
-                                self.seenHunts[k]['status']) +
-                                                 ' naar ' + str(
-                                v['status']) + '. Het aantal punten voor deze hunt is nu:' +
-                                                 str(v['punten']))
+                            self.bot.sendMessage(chat_id, message)
                     elif str(k).lower().startswith('f'):
                         for chat_id in self._F:
-                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
-                                                 ' is aangepast op de website. Van ' + str(
-                                self.seenHunts[k]['status']) +
-                                                 ' naar ' + str(
-                                v['status']) + '. Het aantal punten voor deze hunt is nu:' +
-                                                 str(v['punten']))
+                            self.bot.sendMessage(chat_id, message)
                     else:
                         for chat_id in self._nieuws:
-                            self.bot.sendMessage(chat_id, 'de status van code: ' + str(k) +
-                                                 ' is aangepast op de website. Van ' + str(
-                                self.seenHunts[k]['status']) +
-                                                 ' naar ' + str(
-                                v['status']) + '. Het aantal punten voor deze hunt is nu:' +
-                                                 str(v['punten']))
+                            self.bot.sendMessage(chat_id, message)
                     self.seenHunts[k] = v
 
     @void_no_crash()
@@ -534,7 +615,9 @@ class MyUpdates:
         logging.info('updates error send to user:' + str(e) + ' ' + func_name)
         for chat_id in self._error:
             if self.has_bot():
-                self.bot.sendMessage(chat_id, "er is een error opgetreden:\n" + str(func_name)+'\n'+str(e))
+                self.bot.sendMessage(chat_id,
+                                     "er is een error opgetreden:\n" + str(
+                                         func_name) + '\n' + str(e))
 
 
 def send_cloudmessage(vos, status):

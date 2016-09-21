@@ -1,25 +1,26 @@
 import requests
 
-from PythonApi.jotihunt.Base import Response, NIEUWS, OPDRACHT, NIEUWSLIJST, HINTS, HINT, OPDRACHTEN, SCORELIJST, VOSSEN
+from PythonApi.jotihunt.Base import Response, NIEUWS, OPDRACHT, NIEUWSLIJST,\
+    HINTS, HINT, OPDRACHTEN, SCORELIJST, VOSSEN
 
 _base_url = "http://www.jotihunt.net/api/1.0/"
 
 
-def get_nieuws(ID):
-    url = _base_url + "nieuws/" + str(ID)
+def get_nieuws(nieuws_id):
+    url = _base_url + "nieuws/" + str(nieuws_id)
     r = requests.get(url)
     json = r.json()
     return Response(json, NIEUWS)
 
 
-def get_opdracht(ID):
-    url = _base_url + "opdracht/" + str(ID)
+def get_opdracht(opdracht_id):
+    url = _base_url + "opdracht/" + str(opdracht_id)
     r = requests.get(url)
     return Response(r.json(), OPDRACHT)
 
 
-def get_hint(ID):
-    url = _base_url + "hint/" + str(ID)
+def get_hint(hint_id):
+    url = _base_url + "hint/" + str(hint_id)
     r = requests.get(url)
     return Response(r.json(), HINT)
 
@@ -28,7 +29,7 @@ def get_nieuws_lijst():
     url = _base_url + "nieuws"
     r = requests.get(url)
     json = r.json()
-    return Response(r.json(), NIEUWSLIJST)
+    return Response(json, NIEUWSLIJST)
 
 
 def get_opdrachten():

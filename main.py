@@ -4,7 +4,8 @@ import Updates
 import time
 import threading
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s, %(lineno)s', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %('
+                           'message)s, %(lineno)s', level=logging.DEBUG)
 
 
 class StoppableThread(threading.Thread):
