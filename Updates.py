@@ -619,7 +619,9 @@ class MyUpdates:
                                      "er is een error opgetreden:\n" + str(
                                          func_name) + '\n' + str(e))
 
+    @void_no_crash()
     def to_all(self, message):
+        self.update()
         d = self.to_dict()
         for key, val in enumerate(d):
             if key != 'punten':
