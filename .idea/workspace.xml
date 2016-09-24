@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="b90bf518-212b-4db8-8968-ad3325330cb4" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/commands.py" afterPath="$PROJECT_DIR$/commands.py" />
     </list>
     <ignored path="newbot.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -612,7 +611,14 @@
       <option name="project" value="LOCAL" />
       <updated>1474700064074</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="melding bij verandering pph sess id">
+      <created>1474700558266</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1474700558266</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TestHistory">
@@ -667,7 +673,8 @@
     <MESSAGE value="pep8 nu echt" />
     <MESSAGE value="minor changes&#10;" />
     <MESSAGE value="boot en shutdown message" />
-    <option name="LAST_COMMIT_MESSAGE" value="boot en shutdown message" />
+    <MESSAGE value="melding bij verandering pph sess id" />
+    <option name="LAST_COMMIT_MESSAGE" value="melding bij verandering pph sess id" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
