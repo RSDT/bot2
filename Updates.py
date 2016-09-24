@@ -619,6 +619,13 @@ class MyUpdates:
                                      "er is een error opgetreden:\n" + str(
                                          func_name) + '\n' + str(e))
 
+    def to_all(self, message):
+        d = self.to_dict()
+        for key, val in d:
+            if key != 'punten':
+                for chat_id in val:
+                    self.bot.sendMessage(chat_id, message)
+
 
 def send_cloudmessage(vos, status):
     key = settings.Settings().firebase_key
