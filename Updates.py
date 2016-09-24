@@ -373,7 +373,7 @@ class MyUpdates:
                                      "extra info: " + vos['extra'] + '\n' +
                                      'opmerking/adres: ' + vos['opmerking'])
         elif vos['icon'] == '4':
-            m = self.bot.sendMessage(chat_id, deelgebied + " is geshunt.\n" +
+            m = self.bot.sendMessage(chat_id, deelgebied + " is gehunt.\n" +
                                      "extra info: " + vos['extra'] + '\n' +
                                      'opmerking/adres: ' + vos['opmerking'])
         else:

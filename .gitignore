@@ -1,5 +1,6 @@
 tokens.py
-.idea/
+.idea/*
 __pycache__/*
 *.jhu
 
+*.log
