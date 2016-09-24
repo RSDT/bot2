@@ -600,6 +600,7 @@ def phpsessid_conversation(bot, update, state):
     if s == 0:
         state['cookie'] = update.message.text
         state.done()
+
         bot.sendMessage(update.message.chat_id,
                         update.message.from_user.name + ' de cookie is '
                                                         'aangepast.')
@@ -723,4 +724,9 @@ def bug_done(state):
 @void_no_crash()
 def phpsessid_done(state):
     s = settings.Settings()
+    u = Updates.get_updates()
+    m = 'de phphsessid is aangepast van {old} naar {new}'
+    u.error(Exception(m.format(old=str(s.phpsessid),new=str(state['cookie']))),
+            'php_sess_id')
     s.phpsessid = state['cookie']
+
