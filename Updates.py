@@ -190,6 +190,7 @@ class MyUpdates:
         self.lastHint = None
         self.rp_api = RPApi.get_instance(settings.Settings().rp_username,
                                          settings.Settings().rp_pass)
+        self.messages = [] # list of tuples (int,str)
 
     def to_dict(self):
         return {'A': self._A,
@@ -237,6 +238,10 @@ class MyUpdates:
     @void_no_crash()
     def add_bot(self, bot):
         self.bot = bot
+        for m in self.messages:
+            chat_id, mesg = m
+            bot.sendMessage(chat_id, mesg)
+        self.messages = []
 
     def has_bot(self):
         return self.bot is not None
@@ -626,7 +631,13 @@ class MyUpdates:
         for key, val in enumerate(d):
             if key != 'punten':
                 for chat_id in val:
-                    self.bot.sendMessage(chat_id, message)
+                    self.send_message(chat_id, message)
+
+    def send_message(self, chat_id, message):
+        if self.bot is None:
+            self.messages.append((chat_id, message))
+        else:
+            self.bot.sendMessage(chat_id, message)
 
 
 def send_cloudmessage(vos, status):
