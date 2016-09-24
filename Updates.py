@@ -621,7 +621,7 @@ class MyUpdates:
 
     def to_all(self, message):
         d = self.to_dict()
-        for key, val in d:
+        for key, val in enumerate(d):
             if key != 'punten':
                 for chat_id in val:
                     self.bot.sendMessage(chat_id, message)
