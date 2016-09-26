@@ -215,9 +215,8 @@ class MyUpdates:
 
     @void_no_crash()
     def update(self):
-        if self.has_bot() and \
-                (self._last_update is None or
-                 abs(time.time() - self._last_update) > 60):
+        if self._last_update is None or abs(time.time() -
+                                                    self._last_update) > 60:
             self.update_vos_last()
             self.update_vos_status()
             self.update_nieuws()
@@ -239,8 +238,10 @@ class MyUpdates:
     def add_bot(self, bot):
         self.bot = bot
         for m in self.messages:
-            chat_id, mesg = m
-            bot.sendMessage(chat_id, mesg)
+            chat_id, mesg, botan_id, args, kwargs = m
+            mes = bot.send_message(chat_id, mesg, *args, **kwargs)
+            if botan_id is not None:
+                self.botan.track(mes, str(botan_id))
         self.messages = []
 
     def has_bot(self):
@@ -334,39 +335,48 @@ class MyUpdates:
             self.remove_chat(chat_id, dg)
 
     @void_no_crash()
-    def update_vos_last(self):
-        vos_a = self.rp_api.vos('a')
-        vos_b = self.rp_api.vos('b')
-        vos_c = self.rp_api.vos('c')
-        vos_d = self.rp_api.vos('d')
-        vos_e = self.rp_api.vos('e')
-        vos_f = self.rp_api.vos('f')
-        vos_x = self.rp_api.vos('x')
-        if self.lastA != vos_a and self.has_bot():
+    def update_vos_last(self, new_update=None):
+        if new_update is None:
+            vos_a = self.rp_api.vos('a')
+            vos_b = self.rp_api.vos('b')
+            vos_c = self.rp_api.vos('c')
+            vos_d = self.rp_api.vos('d')
+            vos_e = self.rp_api.vos('e')
+            vos_f = self.rp_api.vos('f')
+            vos_x = self.rp_api.vos('x')
+        else:
+            vos_a = self.lastA
+            vos_b = self.lastB
+            vos_c = self.lastC
+            vos_d = self.lastD
+            vos_e = self.lastE
+            vos_f = self.lastF
+            vos_x = self.lastX
+        if self.lastA != vos_a:
             self.lastA = vos_a
             for chat_id in self._A:
                 self.new_vos(chat_id, 'Alpha', vos_a)
-        if self.lastB != vos_b and self.has_bot():
+        if self.lastB != vos_b:
             self.lastB = vos_b
             for chat_id in self._B:
                 self.new_vos(chat_id, 'Bravo', vos_b)
-        if self.lastC != vos_c and self.has_bot():
+        if self.lastC != vos_c:
             self.lastC = vos_c
             for chat_id in self._C:
                 self.new_vos(chat_id, 'Charlie', vos_c)
-        if self.lastD != vos_d and self.has_bot():
+        if self.lastD != vos_d:
             self.lastD = vos_d
             for chat_id in self._D:
                 self.new_vos(chat_id, 'Delta', vos_d)
-        if self.lastE != vos_e and self.has_bot():
+        if self.lastE != vos_e:
             self.lastE = vos_e
             for chat_id in self._E:
                 self.new_vos(chat_id, 'Echo', vos_e)
-        if self.lastF != vos_f and self.has_bot():
+        if self.lastF != vos_f:
             self.lastF = vos_f
             for chat_id in self._F:
                 self.new_vos(chat_id, 'Foxtrot', vos_f)
-        if self.lastX != vos_x and self.has_bot():
+        if self.lastX != vos_x:
             self.lastX = vos_x
             for chat_id in self._X:
                 self.new_vos(chat_id, 'X-Ray', vos_x)
@@ -374,15 +384,15 @@ class MyUpdates:
     @void_no_crash()
     def new_vos(self, chat_id, deelgebied, vos):
         if vos['icon'] == '3':
-            m = self.bot.sendMessage(chat_id, deelgebied + " Is gespot.\n " +
+            m = self.send_message(chat_id, deelgebied + " Is gespot.\n " +
                                      "extra info: " + vos['extra'] + '\n' +
                                      'opmerking/adres: ' + vos['opmerking'])
         elif vos['icon'] == '4':
-            m = self.bot.sendMessage(chat_id, deelgebied + " is gehunt.\n" +
+            m = self.send_message(chat_id, deelgebied + " is gehunt.\n" +
                                      "extra info: " + vos['extra'] + '\n' +
                                      'opmerking/adres: ' + vos['opmerking'])
         else:
-            m = self.bot.sendMessage(chat_id,
+            m = self.send_message(chat_id,
                                      "Er is een Hint ingevoerd voor " + str(
                                          deelgebied) + '\n' +
                                      'extra info: ' + str(
@@ -485,7 +495,7 @@ class MyUpdates:
                 title=item.titel,
                 url=settings.Settings().base_nieuws_url + item.ID)
             for chat_id in self._nieuws:
-                self.bot.sendMessage(chat_id, message,
+                self.send_message(chat_id, message,
                                      parse_mode=ParseMode.MARKDOWN)
             self.lastNieuws = nieuws[0]
 
@@ -498,7 +508,7 @@ class MyUpdates:
                 title=opdracht.titel,
                 url=settings.Settings().base_opdracht_url + opdracht.ID)
             for chat_id in self._opdrachten:
-                self.bot.sendMessage(chat_id, message,
+                self.send_message(chat_id, message,
                                      parse_mode=ParseMode.MARKDOWN)
             self.lastOpdracht = opdrachten[0]
 
@@ -512,7 +522,7 @@ class MyUpdates:
                                      url=settings.Settings().base_hint_url +
                                      hint.ID)
             for chat_id in self._hints:
-                self.bot.sendMessage(chat_id, message,
+                self.send_message(chat_id, message,
                                      parse_mode=ParseMode.MARKDOWN)
             self.lastHint = hints[0]
 
@@ -548,7 +558,7 @@ class MyUpdates:
             i += 1
         for update in found:
             for chat_id in self._nieuws:
-                self.bot.sendMessage(chat_id,
+                self.send_message(chat_id,
                                      'Er is een mail van de organisatie:\n'
                                      + str(update))
 
@@ -560,27 +570,27 @@ class MyUpdates:
             if k not in self.seenHunts:
                 if str(k).lower().startswith('a'):
                     for chat_id in self._A:
-                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                        self.send_message(chat_id, 'code: ' + str(
                             k) + ' is ingevoerd op de website')
                 elif str(k).lower().startswith('b'):
                     for chat_id in self._B:
-                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                        self.send_message(chat_id, 'code: ' + str(
                             k) + ' is ingevoerd op de website')
                 elif str(k).lower().startswith('c'):
                     for chat_id in self._C:
-                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                        self.send_message(chat_id, 'code: ' + str(
                             k) + ' is ingevoerd op de website')
                 elif str(k).lower().startswith('d'):
                     for chat_id in self._D:
-                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                        self.send_message(chat_id, 'code: ' + str(
                             k) + ' is ingevoerd op de website')
                 elif str(k).lower().startswith('e'):
                     for chat_id in self._E:
-                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                        self.send_message(chat_id, 'code: ' + str(
                             k) + ' is ingevoerd op de website')
                 elif str(k).lower().startswith('f'):
                     for chat_id in self._F:
-                        self.bot.sendMessage(chat_id, 'code: ' + str(
+                        self.send_message(chat_id, 'code: ' + str(
                             k) + ' is ingevoerd op de website')
                 self.seenHunts[k] = v
             else:
@@ -595,35 +605,34 @@ class MyUpdates:
                                              puntten=str(v['punten']))
                     if str(k).lower().startswith('a'):
                         for chat_id in self._A:
-                            self.bot.sendMessage(chat_id, message)
+                            self.send_message(chat_id, message)
                     elif str(k).lower().startswith('b'):
                         for chat_id in self._B:
-                            self.bot.sendMessage(chat_id, message)
+                            self.send_message(chat_id, message)
                     elif str(k).lower().startswith('c'):
                         for chat_id in self._C:
-                            self.bot.sendMessage(chat_id, message)
+                            self.send_message(chat_id, message)
                     elif str(k).lower().startswith('d'):
                         for chat_id in self._D:
-                            self.bot.sendMessage(chat_id, message)
+                            self.send_message(chat_id, message)
                     elif str(k).lower().startswith('e'):
                         for chat_id in self._E:
-                            self.bot.sendMessage(chat_id, message)
+                            self.send_message(chat_id, message)
                     elif str(k).lower().startswith('f'):
                         for chat_id in self._F:
-                            self.bot.sendMessage(chat_id, message)
+                            self.send_message(chat_id, message)
                     else:
                         for chat_id in self._nieuws:
-                            self.bot.sendMessage(chat_id, message)
+                            self.send_message(chat_id, message)
                     self.seenHunts[k] = v
 
     @void_no_crash()
     def error(self, e, func_name):
         logging.info('updates error send to user:' + str(e) + ' ' + func_name)
         for chat_id in self._error:
-            if self.has_bot():
-                self.bot.sendMessage(chat_id,
-                                     "er is een error opgetreden:\n" + str(
-                                         func_name) + '\n' + str(e))
+            self.send_message(chat_id, "er is een error opgetreden:\n "
+                                       "{funcname}\n{e}".format(funcname=str(
+                                         func_name), e=str(e)))
 
     @void_no_crash()
     def to_all(self, message):
@@ -637,11 +646,13 @@ class MyUpdates:
         for chat_id in chat_ids:
             self.send_message(chat_id, message)
 
-    def send_message(self, chat_id, message):
+    def send_message(self, chat_id, message, *args, botan_id=None, **kwargs):
         if self.bot is None:
-            self.messages.append((chat_id, message))
+            self.messages.append((chat_id, message, botan_id, args, kwargs))
         else:
-            self.bot.sendMessage(chat_id, message)
+            m = self.bot.sendMessage(chat_id, message, *args, **kwargs)
+            if botan_id is not None:
+                self.botan.track(m, botan_id)
 
 
 def send_cloudmessage(vos, status):
