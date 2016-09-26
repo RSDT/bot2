@@ -628,10 +628,13 @@ class MyUpdates:
     def to_all(self, message):
         self.update()
         d = self.to_dict()
-        for key, val in enumerate(d):
-            if key != 'punten':
-                for chat_id in val:
-                    self.send_message(chat_id, message)
+        chat_ids = set()
+        for key in d:
+            if type(d[key]) == set:
+                for chat_id in d[key]:
+                    chat_ids.add(chat_id)
+        for chat_id in chat_ids:
+            self.send_message(chat_id, message)
 
     def send_message(self, chat_id, message):
         if self.bot is None:
