@@ -1,3 +1,4 @@
+import telegram
 from telegram.ext import Updater, MessageHandler, Filters
 import settings
 import Updates
@@ -81,37 +82,26 @@ def error_handler(bot, update, error):
 def create_updater():
     updater = Updater(token=settings.Settings().bot_key)
     dp = updater.dispatcher
+    help_updates = 'zet updates aan of uit voor diverse events'
     help_cancel = 'verlaat het huidige commando'
-    help_deelgebieden = 'zet updates aan/uit voor vossen'
-    help_updates = 'zet updates aan/uit voor errors'
     help_crash = 'veroorzaak een test error'
     help_help = 'laat de helptext zien.'
     help_check_updates = 'kijk welke updates aan staan in deze chat.'
     help_start = 'start de bot'
-    help_nieuws = 'zet nieuws updates aan of uit'
     help_test = 'test of de bot online is.'
-    help_opdrachten = 'zet opdracht updates aan of uit.'
-    help_hints = 'zet hint updates aan of uit.'
-    help_fotos = 'zet foto updates aan of uit.'
     help_bug = 'gebruik dit commando als iets te melden hebt over de app,  ' \
                'site of de bot. Of over een ander onderdeel van de hunt'
     help_phpsessid = 'HIER NIET AANKOMEN!!!!!!!!!!!! zet de phpsessid ' \
                      'cookie van jotihunt.net'
     chwh = set()
+    chwh.add(CommandHandlerWithHelp('updates', updates, help_updates))
     chwh.add(CommandHandlerWithHelp('cancel', cancel, help_cancel))
-    chwh.add(CommandHandlerWithHelp('deelgebieden', deelgebied_updates,
-                                    help_deelgebieden))
-    chwh.add(CommandHandlerWithHelp('error', error_updates, help_updates))
     chwh.add(CommandHandlerWithHelp('crash', crash, help_crash))
     chwh.add(CommandHandlerWithHelp('help', help_command, help_help))
     chwh.add(CommandHandlerWithHelp('check_updates', check_updates,
                                     help_check_updates))
     chwh.add(CommandHandlerWithHelp('start', start, help_start))
-    chwh.add(CommandHandlerWithHelp('nieuws', nieuws_updates, help_nieuws))
     chwh.add(CommandHandlerWithHelp('test', test, help_test))
-    chwh.add(CommandHandlerWithHelp('opdrachten', opdrachten, help_opdrachten))
-    chwh.add(CommandHandlerWithHelp('hints', hint_updates, help_hints))
-    chwh.add(CommandHandlerWithHelp('fotos', photo_updates, help_fotos))
     chwh.add(CommandHandlerWithHelp('bug', bug, help_bug))
     chwh.add(CommandHandlerWithHelp('phpsessid', set_phpsessid,
                                     help_phpsessid))
@@ -145,7 +135,7 @@ def set_phpsessid(bot, update):
         bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
                                  "commando niet starten.\n"
                                  " type /cancel om het vorige commando te "
-                                 "stoppen te stoppen",
+                                 "stoppen te stoppeny",
                         reply_to_message_id=update.message.message_id)
         Updates.get_updates().botan.track(update.message,
                                           'incorrect_phpsessid')
@@ -207,70 +197,12 @@ def bug(bot, update):
 
 @void_no_crash()
 @authenticate()
-def opdrachten(bot, update):
-    """
-
-            :param bot:
-            :param update:
-            :return:
-            """
-    chat_id = update.message.chat_id
-    user_id = update.message.from_user.id
-    try:
-        State(bot, chat_id, user_id, add_opdracht_listener_conversation,
-              change_opdracht_updates)
-        bot.sendMessage(chat_id, "Moeten opdracht updates aan of uit staan? "
-                                 "\naan/uit",
-                        reply_to_message_id=update.message.message_id)
-        # TODO add a keyboard
-        Updates.get_updates().botan.track(update.message, 'opdracht_update')
-    except MultipleConversationsError:
-        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
-                                 "commando niet starten.\n"
-                                 " type /cancel om het vorige commando te "
-                                 "stoppen te stoppen",
-                        reply_to_message_id=update.message.message_id)
-        Updates.get_updates().botan.track(update.message,
-                                          'incorrect_opdracht_update')
-
-
-@void_no_crash()
-@authenticate()
 def test(bot, update):
     bot.sendMessage(update.message.chat_id, 'de bot is online')
     url = Updates.get_updates().botan.shorten('google',
                                               update.message.from_user.id)
     bot.sendMessage(update.message.chat_id, url)
     Updates.get_updates().botan.track(update.message, 'test')
-
-
-@void_no_crash()
-@authenticate()
-def nieuws_updates(bot, update):
-    """
-
-        :param bot:
-        :param update:
-        :return:
-        """
-    chat_id = update.message.chat_id
-    user_id = update.message.from_user.id
-    try:
-        State(bot, chat_id, user_id, add_nieuws_listener_conversation,
-              change_niews_updates)
-        bot.sendMessage(chat_id, "Moeten nieuws updates aan of uit staan?\n "
-                                 "aan/uit",
-                        reply_to_message_id=update.message.message_id)
-        # TODO add a keyboard
-        Updates.get_updates().botan.track(update.message, 'nieuws_update')
-    except MultipleConversationsError:
-        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit  "
-                                 "commando niet starten.\n"
-                                 " type /cancel om het vorige commando te "
-                                 "stoppen te stoppen",
-                        reply_to_message_id=update.message.message_id)
-        Updates.get_updates().botan.track(update.message,
-                                          'incorrect_nieuws_update')
 
 
 @void_no_crash()
@@ -353,24 +285,21 @@ def cancel(bot, update):
 
 @void_no_crash()
 @authenticate()
-def deelgebied_updates(bot, update):
-    """
-
-    :param bot:
-    :param update:
-    :return:
-    """
+def updates(bot, update):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
     try:
-        State(bot, chat_id, user_id, deelgebied_conversation,
-              change_dg_updates)
-        message = "Voor welk deelgebied moeten updates aan of uit staan?\n " \
-                  "A, B, C, D, E, F, X"
+        State(bot, chat_id, user_id, updates_conversation,
+              change_updates)
+        message = "Waarvoor moeten updates aan of uit staan?\n " \
+                  "deelgebied, nieuws, hints, opdracht, error"
+        keyboard = [['deelgebied', 'nieuws', 'hints', 'opdracht', 'error']]
+        kb = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
+                                          selective=True)
         bot.sendMessage(chat_id, message,
-                        reply_to_message_id=update.message.message_id)
-        # TODO add a keyboard
-        Updates.get_updates().botan.track(update.message, 'deelgebied')
+                        reply_to_message_id=update.message.message_id,
+                        reply_markup=kb)
+        Updates.get_updates().botan.track(update.message, 'update')
     except MultipleConversationsError:
         bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
                                  "commando niet starten.\n"
@@ -378,91 +307,7 @@ def deelgebied_updates(bot, update):
                                  "stoppen te stoppen",
                         reply_to_message_id=update.message.message_id)
         Updates.get_updates().botan.track(update.message,
-                                          'incorrect_deelgebied')
-
-
-@void_no_crash()
-@authenticate()
-def error_updates(bot, update):
-    """
-
-    :param bot:
-    :param update:
-    :return:
-    """
-    chat_id = update.message.chat_id
-    user_id = update.message.from_user.id
-    try:
-        State(bot, chat_id, user_id, add_error_listener_conversation,
-              change_error_updates)
-        bot.sendMessage(chat_id, "Moeten error updates aan of uitstaan?\n "
-                                 "aan/uit",
-                        reply_to_message_id=update.message.message_id)
-        # TODO add a keyboard
-        Updates.get_updates().botan.track(update.message, 'error')
-    except MultipleConversationsError:
-        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
-                                 "commando niet starten.\n"
-                                 " type /cancel om het vorige commando te "
-                                 "stoppen te stoppen",
-                        reply_to_message_id=update.message.message_id)
-        Updates.get_updates().botan.track(update.message, 'incorrect_error')
-
-
-@void_no_crash()
-@authenticate()
-def hint_updates(bot, update):
-    """
-
-    :param bot:
-    :param update:
-    :return:
-    """
-    chat_id = update.message.chat_id
-    user_id = update.message.from_user.id
-    try:
-        State(bot, chat_id, user_id, add_hint_listener_conversation,
-              change_hints_updates)
-        bot.sendMessage(chat_id, "Moeten hint updates aan of uit staan?\n "
-                                 "aan/uit",
-                        reply_to_message_id=update.message.message_id)
-        # TODO add a keyboard
-        Updates.get_updates().botan.track(update.message, 'hints')
-    except MultipleConversationsError:
-        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
-                                 "commando niet starten.\n"
-                                 " type /cancel om het vorige commando te "
-                                 "stoppen te stoppen",
-                        reply_to_message_id=update.message.message_id)
-        Updates.get_updates().botan.track(update.message, 'incorrect_hints')
-
-
-@void_no_crash()
-@authenticate()
-def photo_updates(bot, update):
-    """
-
-    :param bot:
-    :param update:
-    :return:
-    """
-    chat_id = update.message.chat_id
-    try:
-        # State(bot, chat_id, user_id, PhotoUpdates, change_opdracht_updates)
-        # TODO implement this
-        # bot.sendMessage(chat_id, "Moeten hint updates aan of uit staan?\
-        # naan/uit",
-        #                reply_to_message_id=update.message.message_id)
-        #  TODO add a keyboard
-        bot.sendMessage(chat_id, 'Deze functie doet nog niks')
-        Updates.get_updates().botan.track(update.message, 'fotos')
-    except MultipleConversationsError:
-        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
-                                 "commando niet starten.\n"
-                                 " type /cancel om het vorige commando te "
-                                 "stoppen te stoppen",
-                        reply_to_message_id=update.message.message_id)
-        Updates.get_updates().botan.track(update.message, 'incorrect_fotos')
+                                          'incorrect_update')
 
 
 @void_no_crash()
@@ -476,11 +321,7 @@ def sc_groep(bot, update):
     """
     chat_id = update.message.chat_id
     try:
-        # State(bot, chat_id, user_id, PhotoUpdates, change_opdracht_updates)
         # TODO implement this
-        # bot.sendMessage(chat_id, "Moeten hint updates aan of uit staan?\
-        # naan/uit",
-        #                reply_to_message_id=update.message.message_id)  #
         # TODO add a keyboard
         bot.sendMessage(chat_id, 'Deze functie doet nog niks')
         Updates.get_updates().botan.track(update.message, 'groep')
@@ -523,75 +364,77 @@ def conversation(bot, update):
 
 
 @void_no_crash()
-def deelgebied_conversation(bot, update, state):
-    """
-
-    :param bot:
-    :param update:
-    :param state:
-    """
+def updates_conversation(bot, update, state):
     s = state.get_state()
+    message = 'unexpected input!!'
+    keyboard = None
     if s == 0:
-        if update.message.text in ['A', 'B', 'C', 'D', 'E', 'F', 'X', 'a',
-                                   'b', 'c', 'd', 'e', 'f', 'x']:
-            state['deelgebied'] = update.message.text
-            username = update.message.from_user.name
-            message = username + ' moeten updates aan of uit staan voor dit ' \
-                                 'deelgebied?'
-            bot.sendMessage(update.message.chat_id, message)
+        if update.message.text == 'deelgebied':
+            state['type'] = 'deelgebied'
+            message = 'Voor welk deelgebied moeten de updates aan of uit ' \
+                      'gezet worden?'
+            l = []
+            for dg in ['A', 'B', 'C', 'D', 'E', 'F', 'X']:
+                l.append(dg)
+            keyboard = [l]
+            state.next_state()
+        elif update.message.text in ['nieuws', 'hints', 'opdracht', 'error']:
+            state['type'] = update.message.text
+            message = 'moeten de updates voor {type} aan of uitgezet ' \
+                      'worden?'.format(type=state['type'])
+            keyboard = [['aan', 'uit']]
+            state.next_state()
             state.next_state()
         else:
-            bot.sendMessage(update.message.chat_id,
-                            update.message.from_user.name +
-                            ' Dat deelgebied ken ik niet. kies uit A, B, C, '
-                            'D, E, F of X.\n' +
-                            ' of type /cancel om het commando te stoppen')
+            message = 'Daar kan ik geen updates aan of uit voor zetten. '\
+                      'waar moeten updates aan of uit voor staan? /cancel ' \
+                      'om te stoppen.'
+            l = []
+            for dg in ['deelgebied', 'nieuws', 'hints', 'opdracht', 'error']:
+                l.append(dg)
+            keyboard = [l]
     if s == 1:
-        if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
-            state['status'] = update.message.text
-            state.done()
-            username = update.message.from_user.name
-            message = username + ' De updateszijn aan of uit gezet'
-            bot.sendMessage(update.message.chat_id, message)
+        if update.message.text in ['A', 'B', 'C', 'D', 'E', 'F', 'X']:
+            state['deelgebied'] = update.message.text
+            message = 'Moeten de updates aan of uitgezet worden voor {' \
+                      'deelgebied}?'
+            message = message.format(deelgebied=update.message.text)
+            keyboard = [['aan', 'uit']]
+            state.next_state()
         else:
-            bot.sendMessage(update.message.chat_id,
-                            update.message.from_user.name +
-                            ' kies uit aan of uit.\n' +
-                            ' of type /cancel om het commando te stoppen')
-
-
-@void_no_crash()
-def add_error_listener_conversation(bot, update, state):
-    s = state.get_state()
-    if s == 0:
-        if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
+            message = 'Dat deelgebied ken ik niet. waar wil je updates aan ' \
+                      'of uit voor zetten? /cancel om te stoppen.'
+            l = []
+            for dg in ['A', 'B', 'C', 'D', 'E', 'F', 'X']:
+                l.append(dg)
+            keyboard = [l]
+    if s == 2:
+        if update.message.text in ['aan', 'uit']:
             state['status'] = update.message.text
+            message = 'De updates voor {type} zijn {status}gezet.'
+            message = message.format(type=state['type'], status=state[
+                'status'])
+            botan_id = 'updates_{type}_{dg}_{status}'
+            if state['type'] == 'deelgebied':
+                dg = state['deelgebied']
+            else:
+                dg = ''
+            botan_id = botan_id.format(type=state['type'], dg=dg,
+                                       status=state['status'])
             state.done()
-            username = update.message.from_user.name
-            message = username + ' De Error updates zijn aan of uit gezet'
-            bot.sendMessage(update.message.chat_id, message)
+            Updates.get_updates().botan.track(update.message, botan_id)
         else:
-            bot.sendMessage(update.message.chat_id,
-                            update.message.from_user.name +
-                            ' kies uit aan of uit.\n' +
-                            ' of type /cancel om het commando te stoppen')
-
-
-@void_no_crash()
-def add_nieuws_listener_conversation(bot, update, state):
-    s = state.get_state()
-    if s == 0:
-        if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
-            state['status'] = update.message.text
-            state.done()
-            username = update.message.from_user.name
-            message = username + ' De nieuws updates zijn aan of uit gezet'
-            bot.sendMessage(update.message.chat_id, message)
-        else:
-            bot.sendMessage(update.message.chat_id,
-                            update.message.from_user.name +
-                            ' kies uit aan of uit.\n' +
-                            ' of type /cancel om het commando te stoppen')
+            message = 'kies uit aan of uit'
+            keyboard = [['aan', 'uit']]
+    if keyboard is not None:
+        kb = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
+                                          selective=True)
+        bot.sendMessage(update.message.chat_id, message,
+                        reply_to_message_id=update.message.message_id,
+                        reply_markup=kb)
+    else:
+        bot.sendMessage(update.message.chat_id, message,
+                        reply_to_message_id=update.message.message_id)
 
 
 @void_no_crash()
@@ -600,42 +443,10 @@ def phpsessid_conversation(bot, update, state):
     if s == 0:
         state['cookie'] = update.message.text
         state.done()
+
         bot.sendMessage(update.message.chat_id,
                         update.message.from_user.name + ' de cookie is '
                                                         'aangepast.')
-
-
-@void_no_crash()
-def add_opdracht_listener_conversation(bot, update, state):
-    s = state.get_state()
-    if s == 0:
-        if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
-            state['status'] = update.message.text
-            state.done()
-            bot.sendMessage(update.message.chat_id,
-                            update.message.from_user.name + ' De opdracht '
-                                                            'updates zijn '
-                                                            'aan of uit gezet')
-        else:
-            bot.sendMessage(update.message.chat_id,
-                            update.message.from_user.name +
-                            ' kies uit aan of uit.\n' +
-                            ' of type /cancel om het commando te stoppen')
-
-
-@void_no_crash()
-def add_hint_listener_conversation(bot, update, state):
-    s = state.get_state()
-    username = update.message.from_user.name
-    if s == 0:
-        if update.message.text in ['aan', 'uit', 'Aan', 'Uit']:
-            state['status'] = update.message.text
-            state.done()
-            message = username + ' De hint updates zijn aan of uit gezet'
-        else:
-            message = username + ' kies uit aan of uit.\n of type /cancel ' \
-                                 'om het commando te stoppen'
-        bot.sendMessage(update.message.chat_id, message)
 
 
 @void_no_crash()
@@ -661,6 +472,20 @@ def bug_conversation(bot, update, state):
 # callback functions.                                                         #
 #                                                                             #
 ###############################################################################
+@void_no_crash()
+def change_updates(state):
+    if state['type'] == 'deelgebied':
+        change_dg_updates(state)
+    elif state['type'] == 'opdracht':
+        change_opdracht_updates(state)
+    elif state['type'] == 'error':
+        change_error_updates(state)
+    elif state['type'] == 'nieuws':
+        change_niews_updates(state)
+    elif state['type'] == 'hints':
+        change_hints_updates(state)
+
+
 @void_no_crash()
 def change_dg_updates(state):
     updates = Updates.get_updates()
@@ -723,4 +548,9 @@ def bug_done(state):
 @void_no_crash()
 def phpsessid_done(state):
     s = settings.Settings()
+    u = Updates.get_updates()
+    m = 'de phphsessid is aangepast van {old} naar {new}'
+    u.error(Exception(m.format(old=str(s.phpsessid),new=str(state['cookie']))),
+            'php_sess_id')
     s.phpsessid = state['cookie']
+

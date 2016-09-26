@@ -53,6 +53,11 @@ class Response:
             return False
         elif self.type in [OPDRACHT, HINT, NIEUWS]:
             return self.data.ID == other.data.ID
+        elif self.type == VOSSEN:
+            for k in self.data:
+                if self.data[k].status != other.data[k].status:
+                    return False
+            return True
         else:
             return self.last_update == other.last_update
 

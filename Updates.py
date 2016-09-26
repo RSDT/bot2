@@ -190,6 +190,7 @@ class MyUpdates:
         self.lastHint = None
         self.rp_api = RPApi.get_instance(settings.Settings().rp_username,
                                          settings.Settings().rp_pass)
+        self.messages = [] # list of tuples (int,str)
 
     def to_dict(self):
         return {'A': self._A,
@@ -237,6 +238,10 @@ class MyUpdates:
     @void_no_crash()
     def add_bot(self, bot):
         self.bot = bot
+        for m in self.messages:
+            chat_id, mesg = m
+            bot.sendMessage(chat_id, mesg)
+        self.messages = []
 
     def has_bot(self):
         return self.bot is not None
@@ -373,7 +378,7 @@ class MyUpdates:
                                      "extra info: " + vos['extra'] + '\n' +
                                      'opmerking/adres: ' + vos['opmerking'])
         elif vos['icon'] == '4':
-            m = self.bot.sendMessage(chat_id, deelgebied + " is geshunt.\n" +
+            m = self.bot.sendMessage(chat_id, deelgebied + " is gehunt.\n" +
                                      "extra info: " + vos['extra'] + '\n' +
                                      'opmerking/adres: ' + vos['opmerking'])
         else:
@@ -618,6 +623,24 @@ class MyUpdates:
                 self.bot.sendMessage(chat_id,
                                      "er is een error opgetreden:\n" + str(
                                          func_name) + '\n' + str(e))
+
+    @void_no_crash()
+    def to_all(self, message):
+        self.update()
+        d = self.to_dict()
+        chat_ids = set()
+        for key in d:
+            if type(d[key]) == set:
+                for chat_id in d[key]:
+                    chat_ids.add(chat_id)
+        for chat_id in chat_ids:
+            self.send_message(chat_id, message)
+
+    def send_message(self, chat_id, message):
+        if self.bot is None:
+            self.messages.append((chat_id, message))
+        else:
+            self.bot.sendMessage(chat_id, message)
 
 
 def send_cloudmessage(vos, status):
