@@ -454,24 +454,25 @@ class MyUpdates:
             send_x()
             self.lastStatus = curr_status
         else:
-            for k, item in enumerate(curr_status):
+            for k in curr_status:
+                item = curr_status[k]
                 if item.team == 'Alpha' and item['status'] != \
-                        extract_status('a')['status']:
+                        extract_status('a'):
                     send_a()
                 if item.team == 'Bravo' and item['status'] != \
-                        extract_status('b')['status']:
+                        extract_status('b'):
                     send_b()
                 if item.team == 'Charlie' and item['status'] != \
-                        extract_status('c')['status']:
+                        extract_status('c'):
                     send_c()
                 if item.team == 'Delta' and item['status'] != \
-                        extract_status('d')['status']:
+                        extract_status('d'):
                     send_d()
                 if item.team == 'Echo' and item['status'] != \
-                        extract_status('e')['status']:
+                        extract_status('e'):
                     send_e()
                 if item.team == 'Foxtrot' and item['status'] != \
-                        extract_status('f')['status']:
+                        extract_status('f'):
                     send_f()
                 self.lastStatus = curr_status
 

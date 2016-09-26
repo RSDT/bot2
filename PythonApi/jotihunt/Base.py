@@ -107,11 +107,16 @@ class Nieuws(Base):
 class Vos:
     def __init__(self, team, status):
         self._data = dict()
+        self._data['team'] = team
+        self._data['status'] = status
         self.team = team
         self.status = status
 
     def __eq__(self, other):
         return self.team == other.team and self.status == other.status
+
+    def __getitem__(self, item):
+        return self._data[item]
 
     def __getattr__(self, item):
         try:
