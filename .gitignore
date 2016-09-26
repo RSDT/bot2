@@ -4,3 +4,8 @@ __pycache__/*
 *.jhu
 
 *.log
+*/__pycache__/
+PythonApi/Base/__pycache__/
+PythonApi/RPApi/__pycache__/
+PythonApi/jotihunt/__pycache__/
+PythonApi/scraperApi/__pycache__/
