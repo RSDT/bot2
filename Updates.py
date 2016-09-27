@@ -1,3 +1,4 @@
+import PythonApi.Base
 from MyBotan import Botan
 from PythonApi.RPApi.Base import Api as RPApi
 import settings
@@ -147,11 +148,8 @@ def void_no_crash():
 class MyUpdates:
     def __init__(self):
 
-        self.seenHunts = dict()
         self.mail = imaplib.IMAP4_SSL('imap.gmail.com')
-        self.mail.login(settings.Settings().rpmail_username,
-                        settings.Settings().rpmail_pass)
-        self.mail.select('INBOX')
+        self.seenHunts = dict()
         self.bot = None
         self.botan = Botan(settings.Settings().botan_key)
 
@@ -335,8 +333,8 @@ class MyUpdates:
             self.remove_chat(chat_id, dg)
 
     @void_no_crash()
-    def update_vos_last(self, new_update=None):
-        if new_update is None:
+    def update_vos_last(self, new_update_item=None):
+        if new_update_item is None:
             vos_a = self.rp_api.vos('a')
             vos_b = self.rp_api.vos('b')
             vos_c = self.rp_api.vos('c')
@@ -345,6 +343,8 @@ class MyUpdates:
             vos_f = self.rp_api.vos('f')
             vos_x = self.rp_api.vos('x')
         else:
+            if not isinstance(new_update_item, PythonApi.Base.Item):
+                raise TypeError()
             vos_a = self.lastA
             vos_b = self.lastB
             vos_c = self.lastC
@@ -352,6 +352,20 @@ class MyUpdates:
             vos_e = self.lastE
             vos_f = self.lastF
             vos_x = self.lastX
+            if new_update_item.type == 'rp_vos_a':
+                vos_a = new_update_item.data
+            elif new_update_item.type == 'rp_vos_b':
+                vos_b = new_update_item.data
+            elif new_update_item.type == 'rp_vos_c':
+                vos_c = new_update_item.data
+            elif new_update_item.type == 'rp_vos_d':
+                vos_d = new_update_item.data
+            elif new_update_item.type == 'rp_vos_e':
+                vos_e = new_update_item.data
+            elif new_update_item.type == 'rp_vos_f':
+                vos_f = new_update_item.data
+            elif new_update_item.type == 'rp_vos_x':
+                vos_x = new_update_item.data
         if self.lastA != vos_a:
             self.lastA = vos_a
             for chat_id in self._A:
@@ -384,29 +398,51 @@ class MyUpdates:
     @void_no_crash()
     def new_vos(self, chat_id, deelgebied, vos):
         if vos['icon'] == '3':
-            m = self.send_message(chat_id, deelgebied + " Is gespot.\n " +
-                                     "extra info: " + vos['extra'] + '\n' +
-                                     'opmerking/adres: ' + vos['opmerking'])
+            message = '{deelgebied} Is gespot.\n' \
+                      ' extra info: {extra}\n ' \
+                      'opmerking/adres: {opmerking}'
+            message = message.format(deelgebied=deelgebied,
+                                     extra=vos['extra'],
+                                     opmerking=vos['opmerking'])
+            botan_id = 'newLoc_{deelgebied}_{icon}'
+            botan_id = botan_id.format(deelgebied=deelgebied, icon=vos['icon'])
+            self.send_message(chat_id, message,
+                              botan_id=botan_id)
         elif vos['icon'] == '4':
-            m = self.send_message(chat_id, deelgebied + " is gehunt.\n" +
-                                     "extra info: " + vos['extra'] + '\n' +
-                                     'opmerking/adres: ' + vos['opmerking'])
+            message = '{deelgebied} Is gehunt.\n' \
+                      ' extra info: {extra}\n ' \
+                      'opmerking/adres: {opmerking}'
+            message = message.format(deelgebied=deelgebied,
+                                     extra=vos['extra'],
+                                     opmerking=vos['opmerking'])
+            botan_id = 'newLoc_{deelgebied}_{icon}'
+            botan_id = botan_id.format(deelgebied=deelgebied, icon=vos['icon'])
         else:
-            m = self.send_message(chat_id,
-                                     "Er is een Hint ingevoerd voor " + str(
-                                         deelgebied) + '\n' +
-                                     'extra info: ' + str(
-                                         vos['extra']) + '\n' +
-                                     'opmerking/adres: ' + str(
-                                         vos['opmerking']))
-        self.bot.sendLocation(chat_id, latitude=vos['latitude'],
-                              longitude=vos['longitude'])
-        self.botan.track(m, 'newLoc_' + deelgebied + '_' + vos['icon'])
+            message = 'Er is een hint ingevoerd voor {deelgebied}.\n' \
+                      ' extra info: {extra}\n ' \
+                      'opmerking/adres: {opmerking}'
+            message = message.format(deelgebied=deelgebied,
+                                     extra=vos['extra'],
+                                     opmerking=vos['opmerking'])
+            botan_id = 'newLoc_{deelgebied}_{icon}'
+            botan_id = botan_id.format(deelgebied=deelgebied, icon=vos['icon'])
+        self.send_message(chat_id, message, botan_id=botan_id)
+        if self.has_bot():
+            self.bot.sendLocation(chat_id,
+                                  latitude=vos['latitude'],
+                                  longitude=vos['longitude'])
 
     @void_no_crash()
-    def update_vos_status(self):
-        response = jotihuntApi.get_vossen()
-        curr_status = response.data
+    def update_vos_status(self, new_update_item=None):
+        if new_update_item is None:
+            response = jotihuntApi.get_vossen()
+            curr_status = response.data
+        else:
+            if not isinstance(new_update_item, PythonApi.Base.Item):
+                raise TypeError()
+            curr_status = self.lastStatus
+            if new_update_item.type == 'jh_status':
+                curr_status = new_update_item.data.data
 
         def send_update(chat_id, vos, new_status):
             if new_status is None:
@@ -487,8 +523,15 @@ class MyUpdates:
                 self.lastStatus = curr_status
 
     @void_no_crash()
-    def update_nieuws(self):
-        nieuws = jotihuntApi.get_nieuws_lijst().data
+    def update_nieuws(self, new_update_item=None):
+        if new_update_item is None:
+            nieuws = jotihuntApi.get_nieuws_lijst().data
+        else:
+            if not isinstance(new_update_item, PythonApi.Base.Item):
+                raise TypeError()
+            nieuws = self.lastNieuws
+            if new_update_item.type == 'jh_nieuws_lijst':
+                nieuws = new_update_item.data.data
         if nieuws and nieuws[0] != self.lastNieuws:
             item = nieuws[0].data
             message = 'Er is nieuws met de titel [{title}]({url})'.format(
@@ -500,11 +543,18 @@ class MyUpdates:
             self.lastNieuws = nieuws[0]
 
     @void_no_crash()
-    def update_opdrachten(self):
-        opdrachten = jotihuntApi.get_opdrachten().data
+    def update_opdrachten(self, new_update_item=None):
+        if new_update_item is None:
+            opdrachten = jotihuntApi.get_opdrachten().data
+        else:
+            if not isinstance(new_update_item, PythonApi.Base.Item):
+                raise TypeError()
+            opdrachten = self.lastOpdracht
+            if new_update_item.type == 'jh_opdracht_lijst':
+                opdrachten = new_update_item.data.data
         if opdrachten and opdrachten[0] != self.lastOpdracht:
             opdracht = opdrachten[0].data
-            message = 'Er is nieuws met de titel [{title}]({url})'.format(
+            message = 'Er is opdracht met de titel [{title}]({url})'.format(
                 title=opdracht.titel,
                 url=settings.Settings().base_opdracht_url + opdracht.ID)
             for chat_id in self._opdrachten:
@@ -513,8 +563,15 @@ class MyUpdates:
             self.lastOpdracht = opdrachten[0]
 
     @void_no_crash()
-    def update_hint(self):
-        hints = jotihuntApi.get_hints().data
+    def update_hint(self, new_update_item=None):
+        if new_update_item is None:
+            hints = jotihuntApi.get_hints().data
+        else:
+            if not isinstance(new_update_item, PythonApi.Base.Item):
+                raise TypeError()
+            hints = self.lastHint
+            if new_update_item.type == 'jh_hint_lijst':
+                hints = new_update_item.data.data
         if hints and hints[0] != self.lastHint:
             hint = hints[0].data
             message = 'Er is een hint met de titel [{title}]({url})'
@@ -523,17 +580,21 @@ class MyUpdates:
                                      hint.ID)
             for chat_id in self._hints:
                 self.send_message(chat_id, message,
-                                     parse_mode=ParseMode.MARKDOWN)
+                                  parse_mode=ParseMode.MARKDOWN)
             self.lastHint = hints[0]
 
     @void_no_crash()
-    def update_foto_opdracht(self):
+    def update_foto_opdracht(self, new_update_item=None):
         pass
 
     @void_no_crash()
-    def update_mail(self):
+    def update_mail(self, new_update_item=None):
         i = 1
         found = []
+        self.mail = imaplib.IMAP4_SSL('imap.gmail.com')
+        self.mail.login(settings.Settings().rpmail_username,
+                        settings.Settings().rpmail_pass)
+        self.mail.select('INBOX')
         self.mail.search(None, 'ALL')
         while True:
             j = bytes(str(i), 'utf8')
@@ -563,7 +624,7 @@ class MyUpdates:
                                      + str(update))
 
     @void_no_crash()
-    def update_hunts(self):
+    def update_hunts(self, new_update_item=None):
         h = get_hunts()
         hd = to_dict(*h)
         for k, v in enumerate(hd):
