@@ -32,9 +32,10 @@ class StoppableThread(threading.Thread):
                 logging.error('update error:  ' + str(e))
                 updater.error(e, 'update_thread')
             i = 0
-            while i < 300 and not self.stopped():
+            while i < 60 and not self.stopped():
                 di = 5
                 time.sleep(di)
+                i += di
         logging.debug('5min update thread stopped')
 
 

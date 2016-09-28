@@ -351,7 +351,7 @@ def conversation(bot, update):
     updater = Updates.get_updates()
     if not updater.has_bot():
         updater.add_bot(bot)
-    updater.update()
+    # updater.update()
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
     h = str(user_id) + str(chat_id)
@@ -375,8 +375,8 @@ def updates_conversation(bot, update, state):
                       'gezet worden?'
             l = []
             for dg in ['A', 'B', 'C', 'D', 'E', 'F', 'X']:
-                l.append(dg)
-            keyboard = [l]
+                l.append([dg])
+            keyboard = l
             state.next_state()
         elif update.message.text in ['nieuws', 'hints', 'opdracht', 'error']:
             state['type'] = update.message.text
@@ -391,8 +391,8 @@ def updates_conversation(bot, update, state):
                       'om te stoppen.'
             l = []
             for dg in ['deelgebied', 'nieuws', 'hints', 'opdracht', 'error']:
-                l.append(dg)
-            keyboard = [l]
+                l.append([dg])
+            keyboard = l
     if s == 1:
         if update.message.text in ['A', 'B', 'C', 'D', 'E', 'F', 'X']:
             state['deelgebied'] = update.message.text
@@ -406,8 +406,8 @@ def updates_conversation(bot, update, state):
                       'of uit voor zetten? /cancel om te stoppen.'
             l = []
             for dg in ['A', 'B', 'C', 'D', 'E', 'F', 'X']:
-                l.append(dg)
-            keyboard = [l]
+                l.append([dg])
+            keyboard = l
     if s == 2:
         if update.message.text in ['aan', 'uit']:
             state['status'] = update.message.text
