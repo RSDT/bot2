@@ -279,7 +279,8 @@ def cancel(bot, update):
         Updates.get_updates().botan.track(update.message, 'incorrect_cancel')
     else:
         bot.sendMessage(chat_id, "Het commando is gestopt.",
-                        reply_to_message_id=update.message.message_id)
+                        reply_to_message_id=update.message.message_id,
+                        reply_markup=telegram.ReplyKeyboardHide())
         Updates.get_updates().botan.track(update.message, 'cancel')
 
 
@@ -293,7 +294,8 @@ def updates(bot, update):
               change_updates)
         message = "Waarvoor moeten updates aan of uit staan?\n " \
                   "deelgebied, nieuws, hints, opdracht, error"
-        keyboard = [['deelgebied', 'nieuws', 'hints', 'opdracht', 'error']]
+        keyboard = [['deelgebied'], ['nieuws'], ['hints'], ['opdracht'],
+                    ['error']]
         kb = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                           selective=True)
         bot.sendMessage(chat_id, message,
@@ -434,7 +436,8 @@ def updates_conversation(bot, update, state):
                         reply_markup=kb)
     else:
         bot.sendMessage(update.message.chat_id, message,
-                        reply_to_message_id=update.message.message_id)
+                        reply_to_message_id=update.message.message_id,
+                        reply_markup=telegram.ReplyKeyboardHide())
 
 
 @void_no_crash()

@@ -609,7 +609,7 @@ class MyUpdates:
             result = re.search('de opdracht(.)*?deze opdracht', raw_text, re.S)
             if result is not None and result.group(0) not in self.seenMail:
                 found.append(result.group(0))
-                self.seenMail.add(result)
+                self.seenMail.add(result.group(0))
             result = re.search(
                 'Jullie tegenhunt(.)*?mag uiteraard wel',
                 raw_text, re.S)
