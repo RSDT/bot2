@@ -11,6 +11,16 @@ def parse_time(tijd):
     return tijd
 
 
+def _retry_with_new_key_on_error(func):
+    def decorate(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except VerificationError:
+            self.login()
+            return func(self, *args, **kwargs)
+
+    return decorate
+
 class Api:
     instances = dict()
 
@@ -58,6 +68,9 @@ class Api:
                 return r.json()
         else:
             raise UndocumatedStatusCodeError((r.status_code, r.content))
+
+    _send_request_b = _send_request
+    _send_request = _retry_with_new_key_on_error(_send_request_b)
 
     def hunter_namen(self):
         root = 'hunter'
@@ -186,3 +199,6 @@ class Api:
                 'latitude': str(lat),
                 'longitude': str(lon), 'icon': str(icon), 'info': str(info)}
         self._send_request(root, data=data)
+
+
+
