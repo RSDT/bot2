@@ -5,7 +5,7 @@ from hashlib import sha1
 import json
 import time
 
-
+VOS, META, SC_ALL, FOTO_ALL, GEBRUIKER_INFO = range(5)
 def parse_time(tijd):
     # todo schrijf deze functie
     return tijd
@@ -109,6 +109,7 @@ class Api:
         return data
 
     def vos(self, team, tijd=None, vos_id=None):
+        t = None
         if vos_id is None and tijd is None:
             result = self._vos_last(team)
         elif vos_id is not None and tijd is None:
@@ -117,7 +118,7 @@ class Api:
             result = self._vos_all(team, tijd)
         else:
             result = None
-        return result
+        return Response(result, VOS)
 
     def _vos_last(self, team):
         root = 'vos'
@@ -143,25 +144,25 @@ class Api:
         root = 'meta'
         functie = ''
         data = self._send_request(root, functie)
-        return data
+        return Response(data, META)
 
     def sc_all(self):
         root = 'sc'
         functie = 'all/'
         data = self._send_request(root, functie)
-        return data
+        return Response(data, SC_ALL)
 
     def foto_all(self):
         root = 'foto'
         functie = 'all/'
         data = self._send_request(root, functie)
-        return data
+        return Response(data, FOTO_ALL)
 
     def gebruiker_info(self):
         root = 'gebruiker'
         functie = 'info/'
         data = self._send_request(root, functie)
-        return data
+        return Response(data, GEBRUIKER_INFO)
 
     def login(self):
         data = {'gebruiker': self.username, 'ww': self.hashed_password}
@@ -199,6 +200,30 @@ class Api:
                 'latitude': str(lat),
                 'longitude': str(lon), 'icon': str(icon), 'info': str(info)}
         self._send_request(root, data=data)
+
+
+class Response:
+    def __init__(self, json, type):
+        self.data = json
+        self.type = type
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+        if other.type != self.type:
+            return False
+        if self.type == VOS:
+            return self.data['id'] == other.data['id']
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def __iter__(self):
+        yield from self.data
+
 
 
 

@@ -3,9 +3,10 @@ import logging
 import Updates
 import time
 import threading
+import wrappers
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %('
-                           'message)s, %(lineno)s', level=logging.DEBUG)
+                           'message)s, %(lineno)s', level=logging.INFO)
 
 
 class StoppableThread(threading.Thread):
@@ -16,12 +17,14 @@ class StoppableThread(threading.Thread):
         super(StoppableThread, self).__init__()
         self._mystop = threading.Event()
 
+    @wrappers.void_no_crash()
     def stop(self):
         self._mystop.set()
 
     def stopped(self):
         return self._mystop.isSet()
 
+    @wrappers.void_no_crash()
     def run(self):
         logging.debug('5min uodate thread started')
         updater = Updates.get_updates()
@@ -31,12 +34,13 @@ class StoppableThread(threading.Thread):
             except Exception as e:
                 logging.error('update error:  ' + str(e))
                 updater.error(e, 'update_thread')
-            i = 0
-            while i < 60 and not self.stopped():
+            start = time.time()
+            end = time.time()
+            while end-start < 60 and not self.stopped():
                 di = 5
                 time.sleep(di)
-                i += di
-        logging.debug('5min update thread stopped')
+                end = time.time()
+        logging.debug('1min update thread stopped')
 
 
 def main():

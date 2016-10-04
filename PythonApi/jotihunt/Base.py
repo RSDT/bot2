@@ -113,10 +113,15 @@ class Vos:
         self.status = status
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.team == other.team and self.status == other.status
 
     def __getitem__(self, item):
         return self._data[item]
+
+    def __setitem__(self, key, value):
+        self._data[key] = value
 
     def __getattr__(self, item):
         try:

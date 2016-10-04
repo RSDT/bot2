@@ -1,3 +1,5 @@
+import random
+
 import requests
 
 from PythonApi.jotihunt.Base import Response, NIEUWS, OPDRACHT, NIEUWSLIJST,\
@@ -51,6 +53,13 @@ def get_scorelijst():
 
 
 def get_vossen():
+    debug = True
     url = _base_url + "vossen"
     r = requests.get(url)
-    return Response(r.json(), VOSSEN)
+    json = r.json()
+    if debug:
+        json['data'].append({'team': 'XRay',
+                             'status': random.choice(['rood',
+                                                      'oranje',
+                                                      'groen'])})
+    return Response(json, VOSSEN)

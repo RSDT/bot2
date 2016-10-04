@@ -1,10 +1,10 @@
-import PythonApi.Base
 from MyBotan import Botan
 from PythonApi.RPApi.Base import Api as RPApi
 import settings
 import logging
 import time
 import PythonApi.jotihunt.Retrievers as jotihuntApi
+import PythonApi.jotihunt.Base as jotihuntApiBase
 import pickle
 import os
 from telegram.parsemode import ParseMode
@@ -106,7 +106,22 @@ status_plaatjes = {
             'type': 'sticker',
             'file_id': 'BQADBAADVgADxPsqAffXkv_Pldg-Ag'
         }
+    },
+    'x': {  # todo dit zijn de stickers van f moet vervangen worden naar x stic
+        'groen': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADXgADxPsqATT7K_u22oL7Ag'
+        },
+        'rood': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADXAADxPsqAYLGQPHFp1xLAg'
+        },
+        'oranje': {
+            'type': 'sticker',
+            'file_id': 'BQADBAADVgADxPsqAffXkv_Pldg-Ag'
+        }
     }
+
 }
 
 
@@ -152,20 +167,117 @@ class MyUpdates:
         self.seenHunts = dict()
         self.bot = None
         self.botan = Botan(settings.Settings().botan_key)
+        self.rp_api = RPApi.get_instance(settings.Settings().rp_username,
+                                         settings.Settings().rp_pass)
+        self.messages = []  # list of tuples (int, str, str, tuple, dict)
 
-        # sets met chat_ids die updates willen ontvangen.
-        self._A = set()  # naam niet veranderen
-        self._B = set()  # naam niet veranderen
-        self._C = set()  # naam niet veranderen
-        self._D = set()  # naam niet veranderen
-        self._E = set()  # naam niet veranderen
-        self._F = set()  # naam niet veranderen
-        self._X = set()  # naam niet veranderen
+        def get_kwargs_vos(new_item):
+            if new_item['icon'] == '3':
+                new_item['soort'] = 'Spot'
+            elif new_item['icon'] == '4':
+                new_item['soort'] = 'Hunt'
+            else:
+                new_item['soort'] = 'Hint'
+            return new_item.data
+
+        def get_kwargs_vos_status(new_item):
+            new_item['dg'] = new_item['team'][0].lower()
+            return new_item._data
+
+        def send_location(vos, chat_ids):
+            bot = get_updates().bot
+            if bot is not None:
+                for chat_id in chat_ids:
+                    bot.sendLocation(chat_id, latitude=vos['latitude'],
+                                     longitude=vos['longitude'])
+
+        def send_status_sticker(status, chat_ids):
+            bot = get_updates().bot
+            vos = status['dg']
+            new_status = status['status']
+            if bot is not None:
+                for chat_id in chat_ids:
+                    bot.sendSticker(chat_id,
+                                    status_plaatjes[vos][new_status]['file_id']
+                                    )
+
+        message_vos = 'er is een {soort} ingevoerd voor {team}.\n' \
+                      ' extra info: {extra}\n ' \
+                      'opmerking/adres: {opmerking}'
+        message_vos_status = 'Er is een nieuwe status voor {team}'
+        self.botan_id_vos = 'newLoc_{team}_{soort}'
+        self.botan_id_vos_status = 'newStatus_{dg}_{status}'
+        def get_retriever(dg):
+            def retriever():
+                return self.rp_api.vos(dg)
+            return retriever
+        def get_retriever_status(dg):
+            def retriever():
+                return jotihuntApi.get_vossen().data[dg]
+            return retriever
+        for dg in ['a', 'b', 'c', 'd', 'e', 'f', 'x']:
+            retr1 = get_retriever(dg)
+            updater_rp = SingleUpdater(retr1,
+                                       get_kwargs_vos, message_vos,
+                                       botan_id=self.botan_id_vos+'_'+dg,
+                                       callback=send_location)
+            retr = get_retriever_status(dg)
+            updater_status = SingleUpdater(retr, get_kwargs_vos_status,
+                                               message_vos_status,
+                                               botan_id=self.botan_id_vos_status + '_'+dg,
+                                               callback=send_status_sticker)
+            if dg == 'a':
+                self._A = SingleUpdateContainer([updater_rp, updater_status])
+            elif dg == 'b':
+                self._B = SingleUpdateContainer([updater_rp, updater_status])
+            elif dg == 'c':
+                self._C = SingleUpdateContainer([updater_rp, updater_status])
+            elif dg == 'd':
+                self._D = SingleUpdateContainer([updater_rp, updater_status])
+            elif dg == 'e':
+                self._E = SingleUpdateContainer([updater_rp, updater_status])
+            elif dg == 'f':
+                self._F = SingleUpdateContainer([updater_rp, updater_status])
+            elif dg == 'x':
+                self._X = SingleUpdateContainer([updater_rp, updater_status])
+
         self._photos = set()  # naam niet veranderen
-        self._opdrachten = set()  # naam niet veranderen
-        self._nieuws = set()  # naam niet veranderen
+        get_last_opdracht = lambda: jotihuntApi.get_opdrachten().data[0]
+        get_last_nieuws = lambda: jotihuntApi.get_nieuws_lijst().data[0]
+        get_last_hint = lambda: jotihuntApi.get_hints().data[0]
+        self.botan_id_jotihunt = 'new_{soort}'
+
+        def get_jotihunt_kwargs(new_response):
+            r = dict()
+            item = new_response.data
+            r['title'] = item.titel,
+            if isinstance(item, jotihuntApiBase.Opdracht):
+                r['url'] = settings.Settings().base_opdracht_url + item.ID
+                r['soort'] = 'een_nieuwe_opdracht'
+            elif isinstance(item, jotihuntApiBase.Hint):
+                r['url'] = settings.Settings().base_hint_url + item.ID
+                r['soort'] = 'een_nieuwe_hint'
+            elif isinstance(item, jotihuntApiBase.Nieuws):
+                r['url'] = settings.Settings().base_nieuws_url + item.ID
+                r['soort'] = 'nieuws'
+            return r
+
+        jotihunt_message = 'Er is {soort} met de titel [{title}]({url})'
+        opdracht_updater = SingleUpdater(get_last_opdracht,
+                                         get_jotihunt_kwargs, jotihunt_message,
+                                         botan_id=self.botan_id_jotihunt)
+        nieuws_updater = SingleUpdater(get_last_nieuws, get_jotihunt_kwargs,
+                                       jotihunt_message,
+                                       botan_id=self.botan_id_jotihunt)
+        hint_updater = SingleUpdater(get_last_hint, get_jotihunt_kwargs,
+                                     jotihunt_message,
+                                     botan_id=self.botan_id_jotihunt)
+
+        self._opdrachten = SingleUpdateContainer([opdracht_updater])  # naam niet
+        # veranderen
+        self._nieuws = SingleUpdateContainer([nieuws_updater])  # naam niet veranderen
+        self._hints = SingleUpdateContainer([hint_updater])  # naam niet veranderen
         self._error = set()  # naam niet veranderen
-        self._hints = set()  # naam niet veranderen
         self._punten = {'opdrachten': 0,
                         'hints': 0,
                         'hunts': 0,
@@ -186,9 +298,6 @@ class MyUpdates:
         self.lastStatus = None
         self.seenMail = set()
         self.lastHint = None
-        self.rp_api = RPApi.get_instance(settings.Settings().rp_username,
-                                         settings.Settings().rp_pass)
-        self.messages = [] # list of tuples (int,str)
 
     def to_dict(self):
         return {'A': self._A,
@@ -215,11 +324,17 @@ class MyUpdates:
     def update(self):
         if self._last_update is None or abs(time.time() -
                                                     self._last_update) > 60:
-            self.update_vos_last()
-            self.update_vos_status()
-            self.update_nieuws()
-            self.update_opdrachten()
-            self.update_hint()
+            self._A.update()
+            self._B.update()
+            self._C.update()
+            self._D.update()
+            self._E.update()
+            self._F.update()
+            self._X.update()
+            self._nieuws.update()
+            self._opdrachten.update()
+            self._hints.update()
+
             self.update_foto_opdracht()
             self.update_mail()
             self.update_hunts()
@@ -234,7 +349,8 @@ class MyUpdates:
 
     @void_no_crash()
     def add_bot(self, bot):
-        self.bot = bot
+        if self.bot is None:
+            self.bot = bot
         for m in self.messages:
             chat_id, mesg, botan_id, args, kwargs = m
             mes = bot.send_message(chat_id, mesg, *args, **kwargs)
@@ -333,257 +449,6 @@ class MyUpdates:
             self.remove_chat(chat_id, dg)
 
     @void_no_crash()
-    def update_vos_last(self, new_update_item=None):
-        if new_update_item is None:
-            vos_a = self.rp_api.vos('a')
-            vos_b = self.rp_api.vos('b')
-            vos_c = self.rp_api.vos('c')
-            vos_d = self.rp_api.vos('d')
-            vos_e = self.rp_api.vos('e')
-            vos_f = self.rp_api.vos('f')
-            vos_x = self.rp_api.vos('x')
-        else:
-            if not isinstance(new_update_item, PythonApi.Base.Item):
-                raise TypeError()
-            vos_a = self.lastA
-            vos_b = self.lastB
-            vos_c = self.lastC
-            vos_d = self.lastD
-            vos_e = self.lastE
-            vos_f = self.lastF
-            vos_x = self.lastX
-            if new_update_item.type == 'rp_vos_a':
-                vos_a = new_update_item.data
-            elif new_update_item.type == 'rp_vos_b':
-                vos_b = new_update_item.data
-            elif new_update_item.type == 'rp_vos_c':
-                vos_c = new_update_item.data
-            elif new_update_item.type == 'rp_vos_d':
-                vos_d = new_update_item.data
-            elif new_update_item.type == 'rp_vos_e':
-                vos_e = new_update_item.data
-            elif new_update_item.type == 'rp_vos_f':
-                vos_f = new_update_item.data
-            elif new_update_item.type == 'rp_vos_x':
-                vos_x = new_update_item.data
-        if self.lastA != vos_a:
-            self.lastA = vos_a
-            for chat_id in self._A:
-                self.new_vos(chat_id, 'Alpha', vos_a)
-        if self.lastB != vos_b:
-            self.lastB = vos_b
-            for chat_id in self._B:
-                self.new_vos(chat_id, 'Bravo', vos_b)
-        if self.lastC != vos_c:
-            self.lastC = vos_c
-            for chat_id in self._C:
-                self.new_vos(chat_id, 'Charlie', vos_c)
-        if self.lastD != vos_d:
-            self.lastD = vos_d
-            for chat_id in self._D:
-                self.new_vos(chat_id, 'Delta', vos_d)
-        if self.lastE != vos_e:
-            self.lastE = vos_e
-            for chat_id in self._E:
-                self.new_vos(chat_id, 'Echo', vos_e)
-        if self.lastF != vos_f:
-            self.lastF = vos_f
-            for chat_id in self._F:
-                self.new_vos(chat_id, 'Foxtrot', vos_f)
-        if self.lastX != vos_x:
-            self.lastX = vos_x
-            for chat_id in self._X:
-                self.new_vos(chat_id, 'X-Ray', vos_x)
-
-    @void_no_crash()
-    def new_vos(self, chat_id, deelgebied, vos):
-        if vos['icon'] == '3':
-            message = '{deelgebied} Is gespot.\n' \
-                      ' extra info: {extra}\n ' \
-                      'opmerking/adres: {opmerking}'
-            message = message.format(deelgebied=deelgebied,
-                                     extra=vos['extra'],
-                                     opmerking=vos['opmerking'])
-            botan_id = 'newLoc_{deelgebied}_{icon}'
-            botan_id = botan_id.format(deelgebied=deelgebied, icon=vos['icon'])
-            self.send_message(chat_id, message,
-                              botan_id=botan_id)
-        elif vos['icon'] == '4':
-            message = '{deelgebied} Is gehunt.\n' \
-                      ' extra info: {extra}\n ' \
-                      'opmerking/adres: {opmerking}'
-            message = message.format(deelgebied=deelgebied,
-                                     extra=vos['extra'],
-                                     opmerking=vos['opmerking'])
-            botan_id = 'newLoc_{deelgebied}_{icon}'
-            botan_id = botan_id.format(deelgebied=deelgebied, icon=vos['icon'])
-        else:
-            message = 'Er is een hint ingevoerd voor {deelgebied}.\n' \
-                      ' extra info: {extra}\n ' \
-                      'opmerking/adres: {opmerking}'
-            message = message.format(deelgebied=deelgebied,
-                                     extra=vos['extra'],
-                                     opmerking=vos['opmerking'])
-            botan_id = 'newLoc_{deelgebied}_{icon}'
-            botan_id = botan_id.format(deelgebied=deelgebied, icon=vos['icon'])
-        self.send_message(chat_id, message, botan_id=botan_id)
-        if self.has_bot():
-            self.bot.sendLocation(chat_id,
-                                  latitude=vos['latitude'],
-                                  longitude=vos['longitude'])
-
-    @void_no_crash()
-    def update_vos_status(self, new_update_item=None):
-        if new_update_item is None:
-            response = jotihuntApi.get_vossen()
-            curr_status = response.data
-        else:
-            if not isinstance(new_update_item, PythonApi.Base.Item):
-                raise TypeError()
-            curr_status = self.lastStatus
-            if new_update_item.type == 'jh_status':
-                curr_status = new_update_item.data.data
-
-        def send_update(chat_id, vos, new_status):
-            if new_status is None:
-                return
-            m = self.bot.sendSticker(chat_id, status_plaatjes[vos][new_status][
-                'file_id'])
-            self.botan.track(m, 'vos_status_' + vos + '_' + new_status)
-            send_cloudmessage(vos, new_status)
-
-        def extract_status(vos):
-            return curr_status[vos[0].lower()].status
-
-        def send_a():
-            for chat_id in self._A:
-                vos = 'a'
-                send_update(chat_id, vos, extract_status(vos))
-
-        def send_b():
-            for chat_id in self._B:
-                vos = 'b'
-                send_update(chat_id, vos, extract_status(vos))
-
-        def send_c():
-            for chat_id in self._C:
-                vos = 'c'
-                send_update(chat_id, vos, extract_status(vos))
-
-        def send_d():
-            for chat_id in self._D:
-                vos = 'd'
-                send_update(chat_id, vos, extract_status(vos))
-
-        def send_e():
-            for chat_id in self._E:
-                vos = 'e'
-                send_update(chat_id, vos, extract_status(vos))
-
-        def send_f():
-            for chat_id in self._F:
-                vos = 'f'
-                send_update(chat_id, vos, extract_status(vos))
-
-        def send_x():
-            for chat_id in self._X:
-                vos = 'x'
-                send_update(chat_id, vos, extract_status(vos))
-
-        if self.lastStatus is None:
-            send_a()
-            send_b()
-            send_c()
-            send_d()
-            send_e()
-            send_f()
-            send_x()
-            self.lastStatus = curr_status
-        else:
-            for k in curr_status:
-                item = curr_status[k]
-                if item.team == 'Alpha' and item['status'] != \
-                        extract_status('a'):
-                    send_a()
-                if item.team == 'Bravo' and item['status'] != \
-                        extract_status('b'):
-                    send_b()
-                if item.team == 'Charlie' and item['status'] != \
-                        extract_status('c'):
-                    send_c()
-                if item.team == 'Delta' and item['status'] != \
-                        extract_status('d'):
-                    send_d()
-                if item.team == 'Echo' and item['status'] != \
-                        extract_status('e'):
-                    send_e()
-                if item.team == 'Foxtrot' and item['status'] != \
-                        extract_status('f'):
-                    send_f()
-                self.lastStatus = curr_status
-
-    @void_no_crash()
-    def update_nieuws(self, new_update_item=None):
-        if new_update_item is None:
-            nieuws = jotihuntApi.get_nieuws_lijst().data
-        else:
-            if not isinstance(new_update_item, PythonApi.Base.Item):
-                raise TypeError()
-            nieuws = self.lastNieuws
-            if new_update_item.type == 'jh_nieuws_lijst':
-                nieuws = new_update_item.data.data
-        if nieuws and nieuws[0] != self.lastNieuws:
-            item = nieuws[0].data
-            message = 'Er is nieuws met de titel [{title}]({url})'.format(
-                title=item.titel,
-                url=settings.Settings().base_nieuws_url + item.ID)
-            for chat_id in self._nieuws:
-                self.send_message(chat_id, message,
-                                     parse_mode=ParseMode.MARKDOWN)
-            self.lastNieuws = nieuws[0]
-
-    @void_no_crash()
-    def update_opdrachten(self, new_update_item=None):
-        if new_update_item is None:
-            opdrachten = jotihuntApi.get_opdrachten().data
-        else:
-            if not isinstance(new_update_item, PythonApi.Base.Item):
-                raise TypeError()
-            opdrachten = self.lastOpdracht
-            if new_update_item.type == 'jh_opdracht_lijst':
-                opdrachten = new_update_item.data.data
-        if opdrachten and opdrachten[0] != self.lastOpdracht:
-            opdracht = opdrachten[0].data
-            message = 'Er is opdracht met de titel [{title}]({url})'.format(
-                title=opdracht.titel,
-                url=settings.Settings().base_opdracht_url + opdracht.ID)
-            for chat_id in self._opdrachten:
-                self.send_message(chat_id, message,
-                                     parse_mode=ParseMode.MARKDOWN)
-            self.lastOpdracht = opdrachten[0]
-
-    @void_no_crash()
-    def update_hint(self, new_update_item=None):
-        if new_update_item is None:
-            hints = jotihuntApi.get_hints().data
-        else:
-            if not isinstance(new_update_item, PythonApi.Base.Item):
-                raise TypeError()
-            hints = self.lastHint
-            if new_update_item.type == 'jh_hint_lijst':
-                hints = new_update_item.data.data
-        if hints and hints[0] != self.lastHint:
-            hint = hints[0].data
-            message = 'Er is een hint met de titel [{title}]({url})'
-            message = message.format(title=hint.titel,
-                                     url=settings.Settings().base_hint_url +
-                                     hint.ID)
-            for chat_id in self._hints:
-                self.send_message(chat_id, message,
-                                  parse_mode=ParseMode.MARKDOWN)
-            self.lastHint = hints[0]
-
-    @void_no_crash()
     def update_foto_opdracht(self, new_update_item=None):
         pass
 
@@ -591,17 +456,17 @@ class MyUpdates:
     def update_mail(self, new_update_item=None):
         i = 1
         found = []
-        self.mail = imaplib.IMAP4_SSL('imap.gmail.com')
-        self.mail.login(settings.Settings().rpmail_username,
+        mail = imaplib.IMAP4_SSL('imap.gmail.com')
+        mail.login(settings.Settings().rpmail_username,
                         settings.Settings().rpmail_pass)
-        self.mail.select('INBOX')
-        self.mail.search(None, 'ALL')
+        mail.select('INBOX')
+        mail.search(None, 'ALL')
         while True:
             j = bytes(str(i), 'utf8')
             try:
-                status, mail = self.mail.fetch(j, '(RFC822)')
+                status, mail = mail.fetch(j, '(RFC822)')
             except Exception as e:
-                self.error(e, 'update_mail')
+                get_updates().error(e, 'update_mail')
                 break
             if mail[0] is None:
                 break
@@ -716,6 +581,120 @@ class MyUpdates:
                 self.botan.track(m, botan_id)
 
 
+class SingleUpdater:
+    def __init__(self, get_item_callback, get_message_kwargs, message,
+                 only_last=True, callback=None, botan_id=None):
+        """
+
+        :param get_item_callback: takes no arguments and returns an
+        comparable item.
+        :param get_message_kwargs: takes the return value from
+        get_item_callback and returns a dict. It will be called as
+        message.format(**get_message_kwargs(new_item))
+        :param message: the message to be send on an update. it will be
+        formatted with the dict from get_message_kwargs
+        :param only_last: True if something is an update if it is different
+        from the last item. False if something is an update if it is different
+        from all earlier items.
+        :param callback: called upon an update as callback(new_item, chat_ids).
+        can be None
+        :param botan_id: an id for what kind of message the bot sends. it
+        will be formatted with the dict from get_message_kwargs
+        """
+        self.seenStuff = set()
+        self.lastSeen = None
+        self.callback = callback
+        self.get_item_callback = get_item_callback
+        self.only_last = only_last
+        self.message = message
+        self.get_message_kwargs = get_message_kwargs
+        self.chat_ids = set()
+        self.botan_id = botan_id
+
+    def feed_new_item(self, new_item):
+        self.lastSeen = new_item
+        if not self.only_last:
+            self.seenStuff.add(new_item)
+        message = self.message
+        kwargs = self.get_message_kwargs(new_item)
+        message = message.format(**kwargs)
+        u = get_updates()
+        botan_id = self.botan_id.format(**kwargs)
+        for chat_id in self.chat_ids:
+            u.send_message(chat_id, message, botan_id=botan_id,
+                           parsemode=ParseMode.MARKDOWN)
+        if self.callback is not None:
+            self.callback(new_item, self.chat_ids)
+
+    @void_no_crash()
+    def update(self):
+        new_item = self.get_item_callback()
+        if self.only_last:
+            is_new = self.lastSeen != new_item
+        else:
+            is_new = new_item not in self.seenStuff
+        if is_new:
+            self.feed_new_item(new_item)
+
+    async def async_update(self):
+        new_item = await self.get_item_callback()
+        if self.only_last:
+            is_new = self.lastSeen != new_item
+        else:
+            is_new = new_item not in self.seenStuff
+        if is_new:
+            self.feed_new_item(new_item)
+
+    def add(self, chat_id):
+        return self.chat_ids.add(chat_id)
+
+    def remove(self, chat_id):
+        return self.chat_ids.remove(chat_id)
+
+    def __contains__(self, item):
+        return item in self.chat_ids
+
+    def __iter__(self):
+        for chat_id in self.chat_ids:
+            yield chat_id
+
+
+class SingleUpdateContainer:
+    def __init__(self, updaters=None):
+        if updaters is None:
+            updaters = []
+        self.updaters = set()
+        self.chat_ids = set()
+        for updater in updaters:
+            self.add_updater(updater)
+
+    def add_updater(self, updater):
+        self.updaters.add(updater)
+        for chat_id in updater:
+            self.add(chat_id)
+
+    def add(self, chat_id):
+        self.chat_ids.add(chat_id)
+        for updater in self.updaters:
+            updater.add(chat_id)
+
+    def remove(self, chat_id):
+        self.chat_ids.remove(chat_id)
+        for updater in self.updaters:
+            updater.remove(chat_id)
+
+    def update(self):
+        for updater in self.updaters:
+            updater.update()
+
+    def __contains__(self, item):
+        return item in self.chat_ids
+
+    def __iter__(self):
+        yield from self.chat_ids
+
+
 def send_cloudmessage(vos, status):
     key = settings.Settings().firebase_key
     data = {'vos': vos, 'status': status}
+
