@@ -636,15 +636,6 @@ class SingleUpdater:
         if is_new:
             self.feed_new_item(new_item)
 
-    async def async_update(self):
-        new_item = await self.get_item_callback()
-        if self.only_last:
-            is_new = self.lastSeen != new_item
-        else:
-            is_new = new_item not in self.seenStuff
-        if is_new:
-            self.feed_new_item(new_item)
-
     def add(self, chat_id):
         return self.chat_ids.add(chat_id)
 
