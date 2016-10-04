@@ -498,6 +498,8 @@ class MyUpdates:
 
     @void_no_crash()
     def update_hunts(self, new_update_item=None):
+        if settings.Settings().phpsessid is None:
+            return
         h = get_hunts()
         hd = to_dict(*h)
         for k, v in enumerate(hd):
