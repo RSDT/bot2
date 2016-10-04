@@ -300,25 +300,26 @@ class MyUpdates:
         self.lastHint = None
 
     def to_dict(self):
-        return {'A': self._A,
-                'B': self._B,
-                'C': self._C,
-                'D': self._D,
-                'E': self._E,
-                'F': self._F,
-                'X': self._X,
+        return {'A': self._A.chat_ids,
+                'B': self._B.chat_ids,
+                'C': self._C.chat_ids,
+                'D': self._D.chat_ids,
+                'E': self._E.chat_ids,
+                'F': self._F.chat_ids,
+                'X': self._X.chat_ids,
                 'photos': self._photos,
-                'opdrachten': self._opdrachten,
-                'nieuws': self._nieuws,
+                'opdrachten': self._opdrachten.chat_ids,
+                'nieuws': self._nieuws.chat_ids,
                 'error': self._error,
-                'hints': self._hints,
-                'punten': self._punten
+                'hints': self._hints.chat_ids,
                 }
 
     @void_no_crash()
     def from_dict(self, d):
         for k in d:
-            setattr(self, '_' + k, d[k])
+            s =getattr(self, '_' + k)
+            for chat_id in d[k]:
+                s.add(chat_id)
 
     @void_no_crash()
     def update(self):
