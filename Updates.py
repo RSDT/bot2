@@ -178,6 +178,7 @@ class MyUpdates:
                 new_item['soort'] = 'Hunt'
             else:
                 new_item['soort'] = 'Hint'
+            new_item['team_upper'] = new_item['team'].upper()
             return new_item.data
 
         def get_kwargs_vos_status(new_item):
@@ -203,18 +204,23 @@ class MyUpdates:
 
         message_vos = 'er is een {soort} ingevoerd voor {team}.\n' \
                       ' extra info: {extra}\n ' \
-                      'opmerking/adres: {opmerking}'
+                      'opmerking/adres: {opmerking}\n' \
+                      'link: http://jotihunt2016.area348.nl/map.php?gebied=' \
+                      '{team_upper}'
         message_vos_status = 'Er is een nieuwe status voor {team}'
         self.botan_id_vos = 'newLoc_{team}_{soort}'
         self.botan_id_vos_status = 'newStatus_{dg}_{status}'
+
         def get_retriever(dg):
             def retriever():
                 return self.rp_api.vos(dg)
             return retriever
+
         def get_retriever_status(dg):
             def retriever():
                 return jotihuntApi.get_vossen().data[dg]
             return retriever
+
         for dg in ['a', 'b', 'c', 'd', 'e', 'f', 'x']:
             retr1 = get_retriever(dg)
             updater_rp = SingleUpdater(retr1,
@@ -223,9 +229,10 @@ class MyUpdates:
                                        callback=send_location)
             retr = get_retriever_status(dg)
             updater_status = SingleUpdater(retr, get_kwargs_vos_status,
-                                               message_vos_status,
-                                               botan_id=self.botan_id_vos_status + '_'+dg,
-                                               callback=send_status_sticker)
+                                           message_vos_status,
+                                           botan_id=self.botan_id_vos_status
+                                           + '_'+dg,
+                                           callback=send_status_sticker)
             if dg == 'a':
                 self._A = SingleUpdateContainer([updater_rp, updater_status])
             elif dg == 'b':
