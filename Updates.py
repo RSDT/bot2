@@ -587,7 +587,6 @@ class MyUpdates:
                             self.send_message(chat_id, message)
                     self.seenHunts[k] = v
 
-    @void_no_crash()
     def error(self, e, func_name, tb=None):
         logging.info('updates error send to user:' + str(e) + ' ' + func_name)
         for chat_id in self._error:
