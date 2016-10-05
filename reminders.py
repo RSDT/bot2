@@ -55,7 +55,7 @@ class Reminder:
             }
             r = requests.post(url=url, json=data)
             json = r.json()
-            return json['verified']
+            return not json['verified']
         except Exception as e:
             logging.error('Login error, return True' + str(e))
             return True
