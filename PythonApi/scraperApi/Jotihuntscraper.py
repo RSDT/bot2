@@ -3,7 +3,7 @@ import re
 import settings
 import requests
 import PythonApi.scraperApi.webscraper as webscraper
-
+from tokens import DEBUG
 login_url = 'http://www.jotihunt.net/groep/loginform.php'
 
 

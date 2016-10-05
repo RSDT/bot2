@@ -12,6 +12,7 @@ import re
 import imaplib
 from PythonApi.scraperApi.Jotihuntscraper import get_hunts
 from PythonApi.scraperApi.webscraper import to_dict
+import threading
 
 UPDATER_FILE = 'updater.jhu'
 
@@ -252,7 +253,7 @@ class MyUpdates:
         get_last_opdracht = lambda: jotihuntApi.get_opdrachten().data[0]
         get_last_nieuws = lambda: jotihuntApi.get_nieuws_lijst().data[0]
         get_last_hint = lambda: jotihuntApi.get_hints().data[0]
-        self.botan_id_jotihunt = 'new_{soort}'
+        self.botan_id_jotihunt = 'new_{botan_soort}'
 
         def get_jotihunt_kwargs(new_response):
             r = dict()
@@ -260,13 +261,14 @@ class MyUpdates:
             r['title'] = item.titel,
             if isinstance(item, jotihuntApiBase.Opdracht):
                 r['url'] = settings.Settings().base_opdracht_url + item.ID
-                r['soort'] = 'een_nieuwe_opdracht'
+                r['soort'] = 'een nieuwe opdracht'
             elif isinstance(item, jotihuntApiBase.Hint):
                 r['url'] = settings.Settings().base_hint_url + item.ID
-                r['soort'] = 'een_nieuwe_hint'
+                r['soort'] = 'een nieuwe hint'
             elif isinstance(item, jotihuntApiBase.Nieuws):
                 r['url'] = settings.Settings().base_nieuws_url + item.ID
                 r['soort'] = 'nieuws'
+            r['botan_soort'] = r['soort'].replace(' ', '_')
             return r
 
         jotihunt_message = 'Er is {soort} met de titel [{title}]({url})'
@@ -292,17 +294,7 @@ class MyUpdates:
                         'totaal': 0}
 
         self._last_update = 0
-        self.lastA = None
-        self.lastB = None
-        self.lastC = None
-        self.lastD = None
-        self.lastE = None
-        self.lastF = None
-        self.lastX = None
         self.lastPhoto = None
-        self.lastOpdracht = None
-        self.lastNieuws = None
-        self.lastStatus = None
         self.seenMail = set()
         self.lastHint = None
 
@@ -332,21 +324,24 @@ class MyUpdates:
     def update(self):
         if self._last_update is None or abs(time.time() -
                                                     self._last_update) > 60:
-            self._A.update()
-            self._B.update()
-            self._C.update()
-            self._D.update()
-            self._E.update()
-            self._F.update()
-            self._X.update()
-            self._nieuws.update()
-            self._opdrachten.update()
-            self._hints.update()
-
+            threads = [threading.Thread(target=self._A.update),
+                       threading.Thread(target=self._B.update),
+                       threading.Thread(target=self._C.update),
+                       threading.Thread(target=self._D.update),
+                       threading.Thread(target=self._E.update),
+                       threading.Thread(target=self._F.update),
+                       threading.Thread(target=self._X.update),
+                       threading.Thread(target=self._nieuws.update),
+                       threading.Thread(target=self._opdrachten.update),
+                       threading.Thread(target=self._hints.update)]
+            for t in threads:
+                t.start()
             self.update_foto_opdracht()
             self.update_mail()
             self.update_hunts()
             self._last_update = time.time()
+            for t in threads:
+                t.join()
         else:
             return
 

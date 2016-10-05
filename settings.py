@@ -43,7 +43,7 @@ class Singleton:
 @Singleton
 class Settings:
     def __init__(self):
-        self.phpsessid = tokens.phpsessid
+        self.phpsessid = None
         self.bot_key = tokens.bot_key
         self.SLEUTEL = tokens.SLEUTEL
         self.rp_username = tokens.rp_username
