@@ -589,11 +589,12 @@ class MyUpdates:
                 ex = traceback.format_exception(*tb)
                 for l in ex:
                     tb_s += l
-            self.send_message(chat_id, "er is een error opgetreden:\n "
-                                       "{funcname}\n{e}\n{clse}\n{tb}".format(
-                funcname=str(
-                                         func_name), e=str(e),
-                clse=e.__class__, tb=tb_s))
+            message = "er is een error opgetreden:\n {funcname}\n{e}\n"\
+                      "{clse}\n {tb}".format(funcname=str(func_name),
+                                             e=str(e), clse=e.__class__,
+                                             tb=tb_s)
+            print(message)
+            self.send_message(chat_id, message)
 
     @void_no_crash()
     def to_all(self, message):
