@@ -170,7 +170,7 @@ def void_no_crash():
 
 class MyUpdates:
     def __init__(self):
-
+        self._reminders_lock = threading.Lock()
         self.mail = imaplib.IMAP4_SSL('imap.gmail.com')
         self.seenHunts = dict()
         self.bot = None
@@ -284,8 +284,11 @@ class MyUpdates:
         def add_opdracht_reminder(opdracht, chat_ids):
             opdracht_id = opdracht.data.ID
             if opdracht_id not in self.reminders:
-                self.reminders[opdracht_id] = Reminder(opdracht, chat_ids)
-
+                self._reminders_lock.acquire()
+                try:
+                    self.reminders[opdracht_id] = Reminder(opdracht, chat_ids)
+                finally:
+                    self._reminders_lock.release()
         opdracht_updater = SingleUpdater(get_last_opdracht,
                                          get_jotihunt_kwargs, jotihunt_message,
                                          botan_id=self.botan_id_jotihunt,
@@ -363,8 +366,12 @@ class MyUpdates:
 
     @void_no_crash()
     def remind(self):
-        for opdracht_id in self.reminders:
-            self.reminders[opdracht_id].remind()
+        self._reminders_lock.acquire()
+        try:
+            for opdracht_id in self.reminders:
+                self.reminders[opdracht_id].remind()
+        finally:
+            self._reminders_lock.release()
 
     @void_no_crash()
     def save(self):

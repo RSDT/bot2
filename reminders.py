@@ -7,6 +7,7 @@ import logging
 import time
 import random
 from telegram import ParseMode
+from tokens import DEBUG
 
 url = 'https://mattijnkreuzen.nl/opdrachten/check_opdracht_klaar.php'
 
@@ -28,15 +29,18 @@ class Reminder:
         self.eindtijd = opdracht.data.eindtijd
         self.titel = opdracht.data.titel
         self.opdracht_id = opdracht.data.ID
-        self.reminders = [[None, (1, 'dag'), (1, 'dag')],
-                          [(1, 'dag'), (1, 'uur'), (2, 'uur')],
-                          [(1, 'uur'), (30, 'minuten'), (10, 'minuten')],
-                          [(30, 'minuten'), (10, 'minuten'), (5, 'minuten')],
-                          [(15, 'minuten'), (3, 'minuten'), (3, 'minuten')],
-                          [(3, 'minuten'), (0, 'minuten'), (1, 'minuten')],
-                          [(0, 'minuten'), (-2, 'minuten'), (1, 'minuten')],
-                          [(-2, 'minuten'), None, None]
-                          ]
+        if not DEBUG:
+            self.reminders = [[None, (1, 'dag'), (1, 'dag')],
+                              [(1, 'dag'), (1, 'uur'), (2, 'uur')],
+                              [(1, 'uur'), (30, 'minuten'), (10, 'minuten')],
+                              [(30, 'minuten'), (10, 'minuten'), (5, 'minuten')],
+                              [(15, 'minuten'), (3, 'minuten'), (3, 'minuten')],
+                              [(3, 'minuten'), (0, 'minuten'), (1, 'minuten')],
+                              [(0, 'minuten'), (-2, 'minuten'), (1, 'minuten')],
+                              [(-2, 'minuten'), None, None]
+                              ]
+        else:
+            self.reminders = [[None, (0, 'minuten'), (1, 'minuten')]]
         self.last_warning = 0
         self.chat_ids = chat_ids
 
