@@ -14,6 +14,8 @@ from PythonApi.scraperApi.Jotihuntscraper import get_hunts
 from PythonApi.scraperApi.webscraper import to_dict
 import threading
 
+from reminders import Reminder
+
 UPDATER_FILE = 'updater.jhu'
 
 ALPHA, BRAVO, CHARLIE, DELTA, ECHO, FOXTROT, XRAY, PHOTOS, OPDRACHTEN, \
@@ -108,18 +110,18 @@ status_plaatjes = {
             'file_id': 'BQADBAADVgADxPsqAffXkv_Pldg-Ag'
         }
     },
-    'x': {  # todo dit zijn de stickers van f moet vervangen worden naar x stic
+    'x': {
         'groen': {
             'type': 'sticker',
-            'file_id': 'BQADBAADXgADxPsqATT7K_u22oL7Ag'
+            'file_id': 'BQADBAADOgADxPsqAU8tH66GcOAVAg'
         },
         'rood': {
             'type': 'sticker',
-            'file_id': 'BQADBAADXAADxPsqAYLGQPHFp1xLAg'
+            'file_id': 'BQADBAADPAADxPsqASyb3aitvwQYAg'
         },
         'oranje': {
             'type': 'sticker',
-            'file_id': 'BQADBAADVgADxPsqAffXkv_Pldg-Ag'
+            'file_id': 'BQADBAADPgADxPsqAbHyHKqDFGuLAg'
         }
     }
 
@@ -202,6 +204,7 @@ class MyUpdates:
                     bot.sendSticker(chat_id,
                                     status_plaatjes[vos][new_status]['file_id']
                                     )
+            send_cloudmessage(vos, new_status)
 
         message_vos = 'er is een {soort} ingevoerd voor {team}.\n' \
                       ' extra info: {extra}\n ' \
@@ -258,7 +261,7 @@ class MyUpdates:
         def get_jotihunt_kwargs(new_response):
             r = dict()
             item = new_response.data
-            r['title'] = item.titel,
+            r['title'] = item.titel
             if isinstance(item, jotihuntApiBase.Opdracht):
                 r['url'] = settings.Settings().base_opdracht_url + item.ID
                 r['soort'] = 'een nieuwe opdracht'
@@ -272,16 +275,23 @@ class MyUpdates:
             return r
 
         jotihunt_message = 'Er is {soort} met de titel [{title}]({url})'
+
+        def add_opdracht_reminder(opdracht, chat_ids):
+            opdracht_id = None
+            if opdracht_id not in self.reminders:
+                self.reminders[opdracht_id] = Reminder(opdracht, chat_ids)
+
         opdracht_updater = SingleUpdater(get_last_opdracht,
                                          get_jotihunt_kwargs, jotihunt_message,
-                                         botan_id=self.botan_id_jotihunt)
+                                         botan_id=self.botan_id_jotihunt,
+                                         callback=add_opdracht_reminder)
         nieuws_updater = SingleUpdater(get_last_nieuws, get_jotihunt_kwargs,
                                        jotihunt_message,
                                        botan_id=self.botan_id_jotihunt)
         hint_updater = SingleUpdater(get_last_hint, get_jotihunt_kwargs,
                                      jotihunt_message,
                                      botan_id=self.botan_id_jotihunt)
-
+        self.reminders = dict()
         self._opdrachten = SingleUpdateContainer([opdracht_updater])  # naam niet
         # veranderen
         self._nieuws = SingleUpdateContainer([nieuws_updater])  # naam niet veranderen
@@ -627,7 +637,7 @@ class SingleUpdater:
         botan_id = self.botan_id.format(**kwargs)
         for chat_id in self.chat_ids:
             u.send_message(chat_id, message, botan_id=botan_id,
-                           parsemode=ParseMode.MARKDOWN)
+                           parse_mode=ParseMode.MARKDOWN)
         if self.callback is not None:
             self.callback(new_item, self.chat_ids)
 

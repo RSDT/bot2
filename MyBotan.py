@@ -60,10 +60,10 @@ class Botan(object):
                 shortened_url = response.read()
             return shortened_url.decode('utf-8')
         except HTTPError as error:
-            self.logger.warn('Botan track error ' + str(error.code) + ':' +
+            self.logger.warning('Botan track error ' + str(error.code) + ':' +
                              error.read().decode(
                 'utf-8'))
             return None
         except URLError as error:
-            self.logger.warn('Botan track error ' + str(error.reason))
+            self.logger.warning('Botan track error ' + str(error.reason))
             return None
