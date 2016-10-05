@@ -49,6 +49,7 @@ def main():
     t.start()
     updater.start_polling()
     updates = Updates.get_updates()
+    updates.add_bot(updater.bot)
     updates.to_all('De bot is weer opgestart')
     updater.idle()
     t.stop()
