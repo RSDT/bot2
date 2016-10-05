@@ -1,3 +1,7 @@
+import traceback
+
+import sys
+
 from MyBotan import Botan
 from PythonApi.RPApi.Base import Api as RPApi
 import settings
@@ -153,10 +157,11 @@ def void_no_crash():
             try:
                 func(*args, **kwargs)
             except Exception as e:
+                type_, value_, traceback_ = sys.exc_info()
                 logging.error(str(e), func.__name__)
                 print(str(e))
                 updates = get_updates()
-                updates.error(e, func.__name__)
+                updates.error(e, func.__name__, (type_, value_, traceback_))
 
         return call
 
@@ -343,7 +348,8 @@ class MyUpdates:
                        threading.Thread(target=self._X.update),
                        threading.Thread(target=self._nieuws.update),
                        threading.Thread(target=self._opdrachten.update),
-                       threading.Thread(target=self._hints.update)]
+                       threading.Thread(target=self._hints.update),
+                       threading.Thread(target=self.remind)]
             for t in threads:
                 t.start()
             self.update_foto_opdracht()
@@ -355,6 +361,12 @@ class MyUpdates:
         else:
             return
 
+    @void_no_crash()
+    def remind(self):
+        for reminder in self.reminders:
+            reminder.remind()
+
+    @void_no_crash()
     def save(self):
         d = self.to_dict()
         with open(UPDATER_FILE, 'wb') as file:
@@ -479,7 +491,8 @@ class MyUpdates:
             try:
                 status, mail = mail.fetch(j, '(RFC822)')
             except Exception as e:
-                get_updates().error(e, 'update_mail')
+                type_, value_, traceback_ = sys.exc_info()
+                get_updates().error(e, 'update_mail', (type_, value_, traceback_))
                 break
             if mail[0] is None:
                 break
@@ -568,14 +581,19 @@ class MyUpdates:
                     self.seenHunts[k] = v
 
     @void_no_crash()
-    def error(self, e, func_name):
+    def error(self, e, func_name, tb=None):
         logging.info('updates error send to user:' + str(e) + ' ' + func_name)
         for chat_id in self._error:
+            tb_s = ''
+            if tb is not None:
+                ex = traceback.format_exception(*tb)
+                for l in ex:
+                    tb_s += l
             self.send_message(chat_id, "er is een error opgetreden:\n "
-                                       "{funcname}\n{e}\n{clse}".format(
+                                       "{funcname}\n{e}\n{clse}\n{tb}".format(
                 funcname=str(
                                          func_name), e=str(e),
-                clse=e.__class__))
+                clse=e.__class__, tb=tb_s))
 
     @void_no_crash()
     def to_all(self, message):

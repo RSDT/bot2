@@ -1,3 +1,5 @@
+import sys
+
 import settings
 import authenticator
 import logging
@@ -10,12 +12,13 @@ def void_no_crash():
             try:
                 func(*args, **kwargs)
             except Exception as e:
-
+                type_, value_, traceback_ = sys.exc_info()
                 print(str(e))
                 updates = Updates.get_updates()
                 if func is not None:
                     logging.error(str(e) + '\n' + func.__name__)
-                    updates.error(e, func.__name__)
+                    updates.error(e, func.__name__,
+                                  (type_, value_, traceback_))
                 else:
                     logging.error(str(e) + '\nIk weet het niet meer.')
                     updates.error(e, '\nIk weet het niet meer.')
