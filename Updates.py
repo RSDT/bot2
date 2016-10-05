@@ -282,7 +282,7 @@ class MyUpdates:
         jotihunt_message = 'Er is {soort} met de titel [{title}]({url})'
 
         def add_opdracht_reminder(opdracht, chat_ids):
-            opdracht_id = None
+            opdracht_id = opdracht.data.ID
             if opdracht_id not in self.reminders:
                 self.reminders[opdracht_id] = Reminder(opdracht, chat_ids)
 
@@ -363,8 +363,8 @@ class MyUpdates:
 
     @void_no_crash()
     def remind(self):
-        for reminder in self.reminders:
-            reminder.remind()
+        for opdracht_id in self.reminders:
+            self.reminders[opdracht_id].remind()
 
     @void_no_crash()
     def save(self):
@@ -608,6 +608,7 @@ class MyUpdates:
             self.send_message(chat_id, message)
 
     def send_message(self, chat_id, message, *args, botan_id=None, **kwargs):
+        message = message[:4096]
         if self.bot is None:
             self.messages.append((chat_id, message, botan_id, args, kwargs))
         else:

@@ -24,10 +24,10 @@ def convert_tijden(waarde, eenheid='seconden'):
 
 class Reminder:
     def __init__(self, opdracht, chat_ids):
-        self.maxpunten = None
-        self.eindtijd = None
-        self.titel = None
-        self.opdracht_id = None
+        self.maxpunten = opdracht.data.maxpunten
+        self.eindtijd = opdracht.data.eindtijd
+        self.titel = opdracht.data.titel
+        self.opdracht_id = opdracht.data.ID
         self.reminders = [[None, (1, 'dag'), (1, 'dag')],
                           [(1, 'dag'), (1, 'uur'), (2, 'uur')],
                           [(1, 'uur'), (30, 'minuten'), (10, 'minuten')],
