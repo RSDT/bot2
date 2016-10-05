@@ -481,15 +481,15 @@ class MyUpdates:
     def update_mail(self, new_update_item=None):
         i = 1
         found = []
-        mail = imaplib.IMAP4_SSL('imap.gmail.com')
-        mail.login(settings.Settings().rpmail_username,
+        gmail = imaplib.IMAP4_SSL('imap.gmail.com')
+        gmail.login(settings.Settings().rpmail_username,
                         settings.Settings().rpmail_pass)
-        mail.select('INBOX')
-        mail.search(None, 'ALL')
+        gmail.select('INBOX')
+        gmail.search(None, 'ALL')
         while True:
             j = bytes(str(i), 'utf8')
             try:
-                status, mail = mail.fetch(j, '(RFC822)')
+                status, mail = gmail.fetch(j, '(RFC822)')
             except Exception as e:
                 type_, value_, traceback_ = sys.exc_info()
                 get_updates().error(e, 'update_mail', (type_, value_, traceback_))
