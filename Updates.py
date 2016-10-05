@@ -572,8 +572,10 @@ class MyUpdates:
         logging.info('updates error send to user:' + str(e) + ' ' + func_name)
         for chat_id in self._error:
             self.send_message(chat_id, "er is een error opgetreden:\n "
-                                       "{funcname}\n{e}".format(funcname=str(
-                                         func_name), e=str(e)))
+                                       "{funcname}\n{e}\n{clse}".format(
+                funcname=str(
+                                         func_name), e=str(e),
+                clse=e.__class__))
 
     @void_no_crash()
     def to_all(self, message):
