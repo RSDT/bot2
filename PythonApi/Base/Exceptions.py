@@ -28,3 +28,6 @@ class UndocumatedStatusCodeError(JotiHuntException):
 
 class IAmATheaPotError(JotiHuntException):
     pass
+
+class UnkownKeyError(JotiHuntException):
+    pass

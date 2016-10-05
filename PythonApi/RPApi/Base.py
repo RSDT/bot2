@@ -1,11 +1,15 @@
+import threading
+
 import requests
 from PythonApi.Base.Exceptions import VerificationError, BannedError, \
-    NoDataError, UndocumatedStatusCodeError, IAmATheaPotError
+    NoDataError, UndocumatedStatusCodeError, IAmATheaPotError, UnkownKeyError
 from hashlib import sha1
 import json
 import time
 
 VOS, META, SC_ALL, FOTO_ALL, GEBRUIKER_INFO = range(5)
+
+
 def parse_time(tijd):
     # todo schrijf deze functie
     return tijd
@@ -16,9 +20,9 @@ def _retry_with_new_key_on_error(func):
         try:
             return func(self, *args, **kwargs)
         except VerificationError:
+            self.api_key = None
             self.login()
             return func(self, *args, **kwargs)
-
     return decorate
 
 class Api:
@@ -30,6 +34,7 @@ class Api:
         self.last_update = None
         self.api_key = None
         self.hunternaam = None
+        self.api_key_lock = threading.RLock()
         self._base_url = 'http://jotihunt-API-V2.area348.nl/'
         self.login()
 
@@ -45,29 +50,37 @@ class Api:
         return Api.instances[username]
 
     def _send_request(self, root, functie="", data=None):
-        max_t = 24 * 60 * 60  # 1 dag
-        if self.last_update is None or time.time() - self.last_update > max_t:
-            self.login()
-        else:
-            self.last_update = time.time()
-        if data is None:
-            url = self._base_url + root + '/' + self.api_key + '/' + functie
-            r = requests.get(url)
-        else:
-            url = self._base_url + root + '/' + functie
-            r = requests.post(url, data=json.dumps(data))
-        if r.status_code == 401:
-            raise VerificationError(r.content)
-        elif r.status_code == 403:
-            raise BannedError(r.content)
-        elif r.status_code == 404:
-            raise NoDataError(r.content)
-        elif r.status_code == 418:
-            raise IAmATheaPotError(r.content)
-        elif r.status_code == 200:
-                return r.json()
-        else:
-            raise UndocumatedStatusCodeError((r.status_code, r.content))
+        self.api_key_lock.acquire()
+        r_val = None
+        try:
+            if self.api_key is None and root != 'login':
+                raise UnkownKeyError(root)
+            max_t = 24 * 60 * 60  # 1 dag
+            if self.last_update is None or time.time() - self.last_update > max_t:
+                self.login()
+            else:
+                self.last_update = time.time()
+            if data is None:
+                url = self._base_url + root + '/' + self.api_key + '/' + functie
+                r = requests.get(url)
+            else:
+                url = self._base_url + root + '/' + functie
+                r = requests.post(url, data=json.dumps(data))
+            if r.status_code == 401:
+                raise VerificationError(r.content)
+            elif r.status_code == 403:
+                raise BannedError(r.content)
+            elif r.status_code == 404:
+                raise NoDataError(r.content)
+            elif r.status_code == 418:
+                raise IAmATheaPotError(r.content)
+            elif r.status_code == 200:
+                r_val = r.json()
+            else:
+                raise UndocumatedStatusCodeError((r.status_code, r.content))
+        finally:
+            self.api_key_lock.release()
+        return r_val
 
     _send_request_b = _send_request
     _send_request = _retry_with_new_key_on_error(_send_request_b)
@@ -165,15 +178,18 @@ class Api:
         return Response(data, GEBRUIKER_INFO)
 
     def login(self):
+        self.api_key_lock.acquire()
         data = {'gebruiker': self.username, 'ww': self.hashed_password}
         root = 'login'
         self.last_update = time.time()
         response = self._send_request(root, data=data)
         sleutel = response['SLEUTEL']
+        self.api_key = sleutel
         import settings
         settings = settings.Settings
         settings.SLEUTEL = sleutel
-        self.api_key = sleutel
+        self.api_key_lock.release()
+
 
     def send_hunter_location(self, lat, lon, icon=0):
         if self.hunternaam is None:

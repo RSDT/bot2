@@ -187,6 +187,7 @@ class MyUpdates:
             else:
                 new_item['soort'] = 'Hint'
             new_item['team_upper'] = new_item['team'].upper()
+            new_item['tijd'] = new_item['datetime'][11:]
             return new_item.data
 
         def get_kwargs_vos_status(new_item):
@@ -214,6 +215,7 @@ class MyUpdates:
         message_vos = 'er is een {soort} ingevoerd voor {team}.\n' \
                       ' extra info: {extra}\n ' \
                       'opmerking/adres: {opmerking}\n' \
+                      'tijd: {tijd}\n' \
                       'link: http://jotihunt2016.area348.nl/map.php?gebied=' \
                       '{team_upper}'
         message_vos_status = 'Er is een nieuwe status voor {team}'
