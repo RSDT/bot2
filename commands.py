@@ -14,6 +14,8 @@ class MultipleConversationsError(Exception):
 class NotCancelledError(Exception):
     pass
 
+DEFAULT_KEYBOARD = [['/updates'], ['/check_updates'], ['/bug']]
+
 
 class State:
     states = dict()
@@ -93,6 +95,9 @@ def create_updater():
                'site of de bot. Of over een ander onderdeel van de hunt'
     help_phpsessid = 'HIER NIET AANKOMEN!!!!!!!!!!!! zet de phpsessid ' \
                      'cookie van jotihunt.net'
+    help_set_url = 'HIER NIET AANKOMEN!! stel de url in voor ' \
+                   'opdrachten/hunts/hints op jotihunt.net alleen nodig als ' \
+                   'je in moet loggen om de link te openen.'
     chwh = set()
     chwh.add(CommandHandlerWithHelp('updates', updates, help_updates))
     chwh.add(CommandHandlerWithHelp('cancel', cancel, help_cancel))
@@ -105,6 +110,7 @@ def create_updater():
     chwh.add(CommandHandlerWithHelp('bug', bug, help_bug))
     chwh.add(CommandHandlerWithHelp('phpsessid', set_phpsessid,
                                     help_phpsessid))
+    chwh.add(CommandHandlerWithHelp('set_url', set_url, help_set_url))
     chwh.add(MessageHandler([Filters.text], conversation))
     dp.add_handler(MessageHandler([Filters.status_update], on_new_user))
     for command_handler_with_help in chwh:
@@ -168,6 +174,32 @@ def on_new_user(bot, update):
 #                                                                             #
 ###############################################################################
 @void_no_crash()
+def set_url(bot, update):
+    chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    try:
+        state = State(bot, chat_id, user_id, set_url_conversation,
+                      set_url_done)
+        state['command'] = update.message.text
+        state['from'] = update.message.from_user.name
+        bot.sendMessage(chat_id, "waar wil je de hunt voor instellen?\n "
+                                 "hint/opdracht/nieuws",
+                        reply_to_message_id=update.message.message_id,
+                        reply_markup=telegram.ReplyKeyboardMarkup([['hint'],
+                                                                   ['opdracht'],
+                                                                   ['nieuws'],
+                                                                   ['/cancel']]))
+        Updates.get_updates().botan.track(update.message, 'set_url')
+    except MultipleConversationsError:
+        bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
+                                 "commando niet starten.\n"
+                                 " type /cancel om het vorige commando te "
+                                 "stoppen te stoppen",
+                        reply_to_message_id=update.message.message_id)
+        Updates.get_updates().botan.track(update.message, 'incorrect_set_url')
+
+
+@void_no_crash()
 def bug(bot, update):
     """
 
@@ -181,10 +213,12 @@ def bug(bot, update):
         state = State(bot, chat_id, user_id, bug_conversation, bug_done)
         state['command'] = update.message.text
         state['from'] = update.message.from_user.name
+        keyboard = telegram.ReplyKeyboardMarkup([['app'], ['site'],
+                                                 ['anders']])
         bot.sendMessage(chat_id, "Waar wil je een tip of een top voor "
                                  "sturen?\napp/bot/site/anders",
-                        reply_to_message_id=update.message.message_id)
-        # TODO add a keyboard
+                        reply_to_message_id=update.message.message_id,
+                        reply_markup=keyboard)
         Updates.get_updates().botan.track(update.message, 'bug')
     except MultipleConversationsError:
         bot.sendMessage(chat_id, "Er is al een commando actief je kunt dit "
@@ -199,8 +233,11 @@ def bug(bot, update):
 @authenticate()
 def test(bot, update):
     bot.sendMessage(update.message.chat_id, 'de bot is online')
-    url = Updates.get_updates().botan.shorten('google',
-                                              update.message.from_user.id)
+    if update.message.chat_id > 0:
+        url = Updates.get_updates().botan.shorten('http://google.com',
+                                                  update.message.from_user.id)
+    else:
+        url = 'http://google.com'
     bot.sendMessage(update.message.chat_id, url)
     Updates.get_updates().botan.track(update.message, 'test')
 
@@ -232,7 +269,13 @@ Of je stuurt hier een berichtje en vraagt of de homebase je wil verifieren.
 
 @void_no_crash()
 def start(bot, update):
-    bot.sendMessage(update.message.chat_id, start_message)
+    if update.message.chat_id > 0:
+        keyboard = telegram.ReplyKeyboardMarkup(DEFAULT_KEYBOARD,
+                                                one_time_keyboard=False)
+        bot.sendMessage(update.message.chat_id, start_message,
+                        reply_markup=keyboard)
+    else:
+        bot.sendMessage(update.message.chat_id, start_message)
     x = authenticate()
     x(lambda bot2, update2: print('authenticated:\n' + str(update.to_dict(
     ))))(bot, update)
@@ -274,13 +317,26 @@ def cancel(bot, update):
         state = State.states[h]
         state.cancel()
     except KeyError:
+        kb = telegram.ReplyKeyboardHide()
+        if update.message.chat_id > 0:
+            keyboard = DEFAULT_KEYBOARD
+            kb = telegram.ReplyKeyboardMarkup(keyboard,
+                                              one_time_keyboard=False,
+                                              selective=True)
         bot.sendMessage(chat_id, "Er is geen commando actief.",
-                        reply_to_message_id=update.message.message_id)
+                        reply_to_message_id=update.message.message_id,
+                        reply_markup=kb)
         Updates.get_updates().botan.track(update.message, 'incorrect_cancel')
     else:
-        bot.sendMessage(chat_id, "Het commando is gestopt.",
+        kb = telegram.ReplyKeyboardHide()
+        if update.message.chat_id > 0:
+            keyboard = DEFAULT_KEYBOARD
+            kb = telegram.ReplyKeyboardMarkup(keyboard,
+                                              one_time_keyboard=False,
+                                              selective=True)
+        bot.sendMessage(update.message.chat_id, "Het commando is gestopt.",
                         reply_to_message_id=update.message.message_id,
-                        reply_markup=telegram.ReplyKeyboardHide())
+                        reply_markup=kb)
         Updates.get_updates().botan.track(update.message, 'cancel')
 
 
@@ -295,7 +351,7 @@ def updates(bot, update):
         message = "Waarvoor moeten updates aan of uit staan?\n " \
                   "deelgebied, nieuws, hints, opdracht, error"
         keyboard = [['deelgebied'], ['nieuws'], ['hints'], ['opdracht'],
-                    ['error']]
+                    ['error'], ['/cancel']]
         kb = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                           selective=True)
         bot.sendMessage(chat_id, message,
@@ -353,7 +409,6 @@ def conversation(bot, update):
     updater = Updates.get_updates()
     if not updater.has_bot():
         updater.add_bot(bot)
-    # updater.update()
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
     h = str(user_id) + str(chat_id)
@@ -363,6 +418,40 @@ def conversation(bot, update):
         return
     state.responer(bot, update, state)
     return
+
+
+@void_no_crash()
+def set_url_conversation(bot, update, state):
+    s = state.get_state()
+    keyboard = None
+    message = 'unexpected input!!'
+    if s == 0:
+        if update.message.text in ['hint', 'opdracht', 'nieuws']:
+            message = 'Wat is de url zonder de id?\n bijv. ' \
+                      'http://www.jotihunt.net/groep/opdracht.php?MID='
+            state['soort'] = update.message.text
+        else:
+            message = 'kies uit hint, opdracht of nieuws. of /cancel om ' \
+                      'terug te gaan.'
+    if s == 1:
+        state['url'] = update.message.text
+        s.done()
+        message = 'De url is aangepast voor ' + state['soort']
+    if keyboard is not None:
+        kb = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
+                                          selective=True)
+        bot.sendMessage(update.message.chat_id, message,
+                        reply_to_message_id=update.message.message_id,
+                        reply_markup=kb)
+    else:
+        kb = telegram.ReplyKeyboardHide()
+        if update.message.chat_id > 0:
+            keyboard = DEFAULT_KEYBOARD
+            kb = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=False,
+                                              selective=True)
+        bot.sendMessage(update.message.chat_id, message,
+                        reply_to_message_id=update.message.message_id,
+                        reply_markup=kb)
 
 
 @void_no_crash()
@@ -376,7 +465,7 @@ def updates_conversation(bot, update, state):
             message = 'Voor welk deelgebied moeten de updates aan of uit ' \
                       'gezet worden?'
             l = []
-            for dg in ['A', 'B', 'C', 'D', 'E', 'F', 'X']:
+            for dg in ['A', 'B', 'C', 'D', 'E', 'F', 'X', '/cancel']:
                 l.append([dg])
             keyboard = l
             state.next_state()
@@ -384,7 +473,7 @@ def updates_conversation(bot, update, state):
             state['type'] = update.message.text
             message = 'moeten de updates voor {type} aan of uitgezet ' \
                       'worden?'.format(type=state['type'])
-            keyboard = [['aan', 'uit']]
+            keyboard = [['aan', 'uit', '/cancel']]
             state.next_state()
             state.next_state()
         else:
@@ -392,7 +481,8 @@ def updates_conversation(bot, update, state):
                       'waar moeten updates aan of uit voor staan? /cancel ' \
                       'om te stoppen.'
             l = []
-            for dg in ['deelgebied', 'nieuws', 'hints', 'opdracht', 'error']:
+            for dg in ['deelgebied', 'nieuws', 'hints', 'opdracht', 'error',
+                       '/cancel']:
                 l.append([dg])
             keyboard = l
     if s == 1:
@@ -401,13 +491,13 @@ def updates_conversation(bot, update, state):
             message = 'Moeten de updates aan of uitgezet worden voor {' \
                       'deelgebied}?'
             message = message.format(deelgebied=update.message.text)
-            keyboard = [['aan', 'uit']]
+            keyboard = [['aan', 'uit', '/cancel']]
             state.next_state()
         else:
             message = 'Dat deelgebied ken ik niet. waar wil je updates aan ' \
                       'of uit voor zetten? /cancel om te stoppen.'
             l = []
-            for dg in ['A', 'B', 'C', 'D', 'E', 'F', 'X']:
+            for dg in ['A', 'B', 'C', 'D', 'E', 'F', 'X', '/cancel']:
                 l.append([dg])
             keyboard = l
     if s == 2:
@@ -427,7 +517,7 @@ def updates_conversation(bot, update, state):
             Updates.get_updates().botan.track(update.message, botan_id)
         else:
             message = 'kies uit aan of uit'
-            keyboard = [['aan', 'uit']]
+            keyboard = [['aan', 'uit', '/cancel']]
     if keyboard is not None:
         kb = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                           selective=True)
@@ -435,9 +525,14 @@ def updates_conversation(bot, update, state):
                         reply_to_message_id=update.message.message_id,
                         reply_markup=kb)
     else:
+        kb = telegram.ReplyKeyboardHide()
+        if update.message.chat_id > 0:
+            keyboard = DEFAULT_KEYBOARD
+            kb = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=False,
+                                              selective=True)
         bot.sendMessage(update.message.chat_id, message,
                         reply_to_message_id=update.message.message_id,
-                        reply_markup=telegram.ReplyKeyboardHide())
+                        reply_markup=kb)
 
 
 @void_no_crash()
@@ -455,6 +550,10 @@ def phpsessid_conversation(bot, update, state):
 @void_no_crash()
 def bug_conversation(bot, update, state):
     s = state.get_state()
+    if update.message.chat_id > 0:
+        keyboard = telegram.ReplyKeyboardMarkup(DEFAULT_KEYBOARD)
+    else:
+        keyboard = telegram.ReplyKeyboardHide()
     if s == 0:
         state['about'] = update.message.text
         message = 'stuur nu je bug, feature, tip of top.'
@@ -468,7 +567,7 @@ def bug_conversation(bot, update, state):
         message = ' dit is een fout in de bot graag aan mattijn laten weten,' \
                   'bug_conversation'
         Updates.get_updates().error(Exception(message), 'bug_conversation')
-    bot.sendMessage(update.message.chat_id, message)
+    bot.sendMessage(update.message.chat_id, message, reply_markup=keyboard)
 
 
 ###############################################################################
@@ -557,3 +656,25 @@ def phpsessid_done(state):
             'php_sess_id')
     s.phpsessid = state['cookie']
 
+
+@void_no_crash()
+def set_url_done(state):
+    s = settings.Settings()
+    u = Updates.get_updates()
+    m = 'de url voor {soort) is aangepast van {old} naar {new}'
+    if state['soort'] == 'hint':
+        m = m.format(soort='hints',
+                     old=str(s.base_hint_url),
+                     new=str(state['url']))
+        s.base_hint_url = state['url']
+    elif state['soort'] == 'opdracht':
+        m = m.format(soort='opdrachten',
+                     old=str(s.base_opdracht_url),
+                     new=str(state['url']))
+        s.base_opdracht_url = state['url']
+    elif state['soort'] == 'nieuws':
+        m = m.format(soort='nieuws',
+                     old=str(s.base_nieuws_url),
+                     new=str(state['url']))
+        s.base_nieuws_url = state['url']
+    u.error(Exception(m), 'set_url')
