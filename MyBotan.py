@@ -26,7 +26,7 @@ class Botan(object):
 
     def track(self, message, event_name='event'):
         with open (self.log_file, 'a') as file:
-            s = '{time} - {event} - {message}'
+            s = '{time} - {event} - {message}\n'
             file.write(s.format(time=time.time(),
                                 event=event_name,
                                 message=message))
