@@ -106,8 +106,8 @@ class Reminder:
     def send_reminder(self):
         self.last_warning = time.time()
         message = 'Reminder voor de opdracht: [{titel}]({url})\n' \
-                  'Hier kunnen we {maxpunten} punt{mv} "mee ' \
-                  'verdienen." We kunnen hier nog {uren} uur en ' \
+                  'Hier kunnen we {maxpunten} punt{mv} mee ' \
+                  'verdienen. We kunnen hier nog {uren} uur en ' \
                   '{min} minuten over doen.'
         message = message.format(titel=self.titel,
                                  url=settings.Settings(
