@@ -652,7 +652,8 @@ def phpsessid_done(state):
     s = settings.Settings()
     u = Updates.get_updates()
     m = 'de phphsessid is aangepast van {old} naar {new}'
-    u.error(Exception(m.format(old=str(s.phpsessid),new=str(state['cookie']))),
+    u.error(Exception(m.format(old=str(s.phpsessid), new=str(state[
+                                                                 'cookie']))),
             'php_sess_id')
     s.phpsessid = state['cookie']
 

@@ -178,7 +178,8 @@ class Api:
         return Response(data, GEBRUIKER_INFO)
 
     def login(self):
-        if self.last_update is not None and time.time() - self.last_update < \
+        if self.last_update is not None and \
+                                time.time() - self.last_update < \
                 120:
             raise ToSoonReloginError(time.time() - self.last_update)
         self.api_key_lock.acquire()

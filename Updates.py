@@ -361,8 +361,23 @@ class MyUpdates:
             self.update_mail()
             self.update_hunts()
             self._last_update = time.time()
-            for t in threads:
-                t.join()
+            start = time.time()
+            while threads:
+                if time.time() - start > 300:
+                    self.send_message(-158130982, 'timeout error opgetrden '
+                                                  'tijdens updaten. updaten '
+                                                  'duurde meer dan 300 '
+                                                  'seconden. waarschijnlijk '
+                                                  'is het een goed idee om '
+                                                  'de bot opnieuw op te '
+                                                  'starten.')
+                    raise TimeoutError('meer dan 5 minuten over een update '
+                                       'gedaan.', len(threads))
+                t = threads.pop(0)
+                t.join(1)
+                if t.isAlive():
+                    threads.append(t)
+
         else:
             return
 
