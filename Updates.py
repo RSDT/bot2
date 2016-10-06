@@ -130,24 +130,30 @@ status_plaatjes = {
     }
 
 }
+updater_lock = threading.Lock()
 
 
 def get_updates():
-    global my_updates_instance
-    if my_updates_instance is None:
-        try:
-            if os.path.isfile(UPDATER_FILE):
-                with open(UPDATER_FILE, 'rb') as file:
+    global updater_lock
+    updater_lock.acquire()
+    try:
+        global my_updates_instance
+        if my_updates_instance is None:
+            try:
+                if os.path.isfile(UPDATER_FILE):
+                    with open(UPDATER_FILE, 'rb') as file:
+                        my_updates_instance = MyUpdates()
+                        d = pickle.load(file)
+                        my_updates_instance.from_dict(d)
+                        if my_updates_instance is None:
+                            raise Exception('huh')
+                else:
                     my_updates_instance = MyUpdates()
-                    d = pickle.load(file)
-                    my_updates_instance.from_dict(d)
-                    if my_updates_instance is None:
-                        raise Exception('huh')
-            else:
+            except Exception as e:
                 my_updates_instance = MyUpdates()
-        except Exception as e:
-            my_updates_instance = MyUpdates()
-            my_updates_instance.error(e, 'startup error')
+                my_updates_instance.error(e, 'startup error')
+    finally:
+        updater_lock.release()
     return my_updates_instance
 
 
