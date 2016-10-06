@@ -2,7 +2,7 @@ import threading
 
 import requests
 from PythonApi.Base.Exceptions import VerificationError, BannedError, \
-    NoDataError, UndocumatedStatusCodeError, IAmATheaPotError, UnkownKeyError
+    NoDataError, UndocumatedStatusCodeError, IAmATheaPotError, UnkownKeyError, ToSoonReloginError
 from hashlib import sha1
 import json
 import time
@@ -24,6 +24,7 @@ def _retry_with_new_key_on_error(func):
             self.login()
             return func(self, *args, **kwargs)
     return decorate
+
 
 class Api:
     instances = dict()
@@ -50,7 +51,6 @@ class Api:
         return Api.instances[username]
 
     def _send_request(self, root, functie="", data=None):
-        self.api_key_lock.acquire()
         r_val = None
         try:
             if self.api_key is None and root != 'login':
@@ -79,7 +79,7 @@ class Api:
             else:
                 raise UndocumatedStatusCodeError((r.status_code, r.content))
         finally:
-            self.api_key_lock.release()
+            pass
         return r_val
 
     _send_request_b = _send_request
@@ -178,18 +178,22 @@ class Api:
         return Response(data, GEBRUIKER_INFO)
 
     def login(self):
+        if self.last_update is not None and time.time() - self.last_update < \
+                120:
+            raise ToSoonReloginError(time.time() - self.last_update)
         self.api_key_lock.acquire()
-        data = {'gebruiker': self.username, 'ww': self.hashed_password}
-        root = 'login'
-        self.last_update = time.time()
-        response = self._send_request(root, data=data)
-        sleutel = response['SLEUTEL']
-        self.api_key = sleutel
-        import settings
-        settings = settings.Settings
-        settings.SLEUTEL = sleutel
-        self.api_key_lock.release()
-
+        try:
+            data = {'gebruiker': self.username, 'ww': self.hashed_password}
+            root = 'login'
+            self.last_update = time.time()
+            response = self._send_request(root, data=data)
+            sleutel = response['SLEUTEL']
+            self.api_key = sleutel
+            import settings
+            settings = settings.Settings
+            settings.SLEUTEL = sleutel
+        finally:
+            self.api_key_lock.release()
 
     def send_hunter_location(self, lat, lon, icon=0):
         if self.hunternaam is None:
