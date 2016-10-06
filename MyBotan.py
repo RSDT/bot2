@@ -3,6 +3,7 @@ import logging
 from future.moves.urllib.parse import quote
 from future.moves.urllib.error import HTTPError, URLError
 from future.moves.urllib.request import urlopen, Request
+import time
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
@@ -21,8 +22,14 @@ class Botan(object):
     def __init__(self, token):
         self.token = token
         self.logger = logging.getLogger(__name__)
+        self.log_file = 'botan_{token}.jhu'.format(token=self.token)
 
     def track(self, message, event_name='event'):
+        with open (self.log_file, 'a') as file:
+            s = '{time} - {event} - {message}'
+            file.write(s.format(time=time.time(),
+                                event=event_name,
+                                message=message))
         try:
             uid = message.chat_id
         except AttributeError:
