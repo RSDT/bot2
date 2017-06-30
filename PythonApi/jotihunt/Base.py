@@ -4,76 +4,8 @@ __all__ = ['SCORELIJST', 'OPDRACHT', 'OPDRACHTEN',
            'HINT', 'HINTS', 'NIEUWS',
            'NIEUWSLIJST', 'VOSSEN', 'Response']
 
-OPDRACHT, OPDRACHTEN, HINT, HINTS, NIEUWS, NIEUWSLIJST, VOSSEN, SCORELIJST =\
+OPDRACHT, OPDRACHTEN, HINT, HINTS, NIEUWS, NIEUWSLIJST, VOSSEN, SCORELIJST = \
     range(8)
-
-
-class Response:
-    def __init__(self, json, kind):
-        self.type = kind
-        if 'error' in json:
-            raise RetrieveException(json['error'])
-        self.version = json['version']
-        self.last_update = json['last_update']
-        self.data = None
-        if self.type == SCORELIJST:
-            self.data = ScoreLijst(json["data"])
-        elif self.type == OPDRACHT:
-            self.data = Opdracht(json["data"][0])
-        elif self.type == OPDRACHTEN:
-            self.data = []
-            from PythonApi.jotihunt.Retrievers import get_opdracht
-            for opdracht in json["data"]:
-                self.data.append(get_opdracht(opdracht["ID"]))
-        elif self.type == HINT:
-            self.data = Hint(json["data"][0])
-        elif self.type == HINTS:
-            self.data = []
-            from PythonApi.jotihunt.Retrievers import get_hint
-            for hint in json["data"]:
-                self.data.append(get_hint(hint["ID"]))
-        elif self.type == NIEUWS:
-            self.data = Nieuws(json["data"][0])
-        elif self.type == NIEUWSLIJST:
-            self.data = []
-            from PythonApi.jotihunt.Retrievers import get_nieuws
-            for nieuws in json["data"]:
-                self.data.append(get_nieuws(nieuws["ID"]))
-        elif self.type == VOSSEN:
-            self.data = dict()
-            for v in json['data']:
-                self.data[v['team'][0].lower()] = Vos(v['team'], v['status'])
-        else:
-            raise NoSuchTypeException(str(self.type))
-
-    def __eq__(self, other):
-        if other is None:
-            return False
-        if self.type != other.type:
-            return False
-        elif self.type in [OPDRACHT, HINT, NIEUWS]:
-            return self.data.ID == other.data.ID
-        elif self.type == VOSSEN:
-            for k in self.data:
-                if self.data[k].status != other.data[k].status:
-                    return False
-            return True
-        else:
-            return self.last_update == other.last_update
-
-    def __str__(self):
-        data = ""
-        if type(self.data) == list:
-            data += '['
-            for d in self.data:
-                data += '\n' + str(d)
-            data += '\n]'
-        else:
-            data = str(self.data)
-        return '{\ntype: ' + str(self.type) + ',\nversion: ' + str(
-            self.version) +\
-               ',\nlast_update: ' + str(self.last_update) + ',\ndata:\n' + \
-               data + '\n}'
 
 
 class Base:
@@ -148,3 +80,71 @@ class ScoutingGroep:
         self.fotoopdrachten = json['fotoopdrachten']
         self.hints = json['hints']
         self.totaal = json['totaal']
+
+
+class Response:
+    def __init__(self, json, kind):
+        self.type = kind
+        if 'error' in json:
+            raise RetrieveException(json['error'])
+        self.version = json['version']
+        self.last_update = json['last_update']
+        self.data = None
+        if self.type == SCORELIJST:
+            self.data = ScoreLijst(json["data"])
+        elif self.type == OPDRACHT:
+            self.data = Opdracht(json["data"][0])
+        elif self.type == OPDRACHTEN:
+            self.data = []
+            from PythonApi.jotihunt.Retrievers import get_opdracht
+            for opdracht in json["data"]:
+                self.data.append(get_opdracht(opdracht["ID"]))
+        elif self.type == HINT:
+            self.data = Hint(json["data"][0])
+        elif self.type == HINTS:
+            self.data = []
+            from PythonApi.jotihunt.Retrievers import get_hint
+            for hint in json["data"]:
+                self.data.append(get_hint(hint["ID"]))
+        elif self.type == NIEUWS:
+            self.data = Nieuws(json["data"][0])
+        elif self.type == NIEUWSLIJST:
+            self.data = []
+            from PythonApi.jotihunt.Retrievers import get_nieuws
+            for nieuws in json["data"]:
+                self.data.append(get_nieuws(nieuws["ID"]))
+        elif self.type == VOSSEN:
+            self.data = dict()
+            for v in json['data']:
+                self.data[v['team'][0].lower()] = Vos(v['team'], v['status'])
+        else:
+            raise NoSuchTypeException(str(self.type))
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+        if self.type != other.type:
+            return False
+        elif self.type in [OPDRACHT, HINT, NIEUWS]:
+            return self.data.ID == other.data.ID
+        elif self.type == VOSSEN:
+            for k in self.data:
+                if self.data[k].status != other.data[k].status:
+                    return False
+            return True
+        else:
+            return self.last_update == other.last_update
+
+    def __str__(self):
+        data = ""
+        if type(self.data) == list:
+            data += '['
+            for d in self.data:
+                data += '\n' + str(d)
+            data += '\n]'
+        else:
+            data = str(self.data)
+        return '{\ntype: ' + str(self.type) + ',\nversion: ' + str(
+            self.version) + \
+               ',\nlast_update: ' + str(self.last_update) + ',\ndata:\n' + \
+               data + '\n}'

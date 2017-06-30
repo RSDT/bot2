@@ -1,5 +1,5 @@
 import math
-import requests
+#import requests
 
 import Updates
 import settings
@@ -9,7 +9,7 @@ import random
 from telegram import ParseMode
 from tokens import DEBUG
 
-url = 'https://mattijnkreuzen.nl/opdrachten/check_opdracht_klaar.php'
+#url = 'https://mattijnkreuzen.nl/opdrachten/check_opdracht_klaar.php'
 
 
 def convert_tijden(waarde, eenheid='seconden'):
