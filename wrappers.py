@@ -36,7 +36,7 @@ def authenticate():
             username = update.message.from_user.name
             chat_name = update.message.chat.title or (
                 update.message.chat.first_name + ' ' +
-                update.message.chat.last_name)
+                (update.message.chat.last_name or ''))
             if authenticator.authenticate_chat(user_id, chat_id,
                                                settings.Settings().SLEUTEL,
                                                username, chat_name):

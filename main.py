@@ -6,7 +6,7 @@ import threading
 import wrappers
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %('
-                           'message)s, %(lineno)s', level=logging.DEBUG)
+                           'message)s, %(lineno)s, %(filename)s', level=logging.DEBUG)
 
 
 class StoppableThread(threading.Thread):
