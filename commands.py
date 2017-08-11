@@ -81,7 +81,7 @@ def error_handler(bot, update, error):
     Updates.get_updates().error(error, "Updater")
 
 
-def create_updater():
+def create_updater() -> Updater:
     updater = Updater(token=settings.Settings().bot_key)
     dp = updater.dispatcher
     help_updates = 'zet updates aan of uit voor diverse events'

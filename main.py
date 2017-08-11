@@ -1,4 +1,4 @@
-from commands import create_updater
+from menu import create_updater
 import logging
 import Updates
 import time
