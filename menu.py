@@ -1,4 +1,5 @@
-from telegram import InlineKeyboardButton, Update, Message, InlineKeyboardMarkup, CallbackQuery
+from telegram import InlineKeyboardButton, Update, Message, InlineKeyboardMarkup, CallbackQuery, Bot, \
+    ReplyKeyboardMarkup, KeyboardButton
 from typing import List, Callable, Tuple, Union,  Dict
 from threading import Lock
 
@@ -8,6 +9,10 @@ import settings
 
 menus = dict()
 menus_lock = Lock()
+
+
+class OldMenuException(Exception):
+    pass
 
 
 class Menu:
@@ -29,12 +34,13 @@ class Menu:
             self._get_next_buttons = self._set_up
             self.path.clear()
         text, buttons = self._get_next_buttons(update, callback_query, rp_acc)
-        buttons.append(InlineKeyboardButton('cancel', callback_data='0'))
+        if callback_query != '0':
+            buttons.append(InlineKeyboardButton('terug naar hoofdmenu', callback_data='0'))
         return text, buttons
 
     def _set_up(self, update: Update, callback_query: str, rp_acc: Dict) -> Tuple[str,List[InlineKeyboardButton]]:
         if callback_query != '0':
-            raise Exception("verkeerde callback_querry !=0 ")
+            raise OldMenuException("verkeerde callback_querry !=0 ")
         self._get_next_buttons = self._main_menu
         if rp_acc.get("level", 25) >= 50:
             return 'Welkom Bij de bot. Wat wil je doen?',\
@@ -107,7 +113,8 @@ class Menu:
         # todo implement this
         return 'niet geimplenteerd', []
 
-def start(bot, update):
+
+def start(bot: Bot, update: Update):
     message: Message = update.message
     with menus_lock:
         if message.chat_id not in menus:
@@ -118,11 +125,12 @@ def start(bot, update):
         menu = menus[message.chat_id]
     rp_acc = {'id': "21398373",
               'gebruikersnaam': "test",
-              'level': 50}
+              'level': 25}
     # todo rp_acc ophalen uit de api. None als de id niet gekoppeld is.
     text, buttons = menu.get_next_buttons(update, '0', rp_acc)
     keyboard = [[button] for button in buttons]
     reply_markup = InlineKeyboardMarkup(keyboard)
+    bot.send_message(update.effective_chat.id, "welkom bij de bot voor de jotihunt bot!", reply_markup=ReplyKeyboardMarkup([[KeyboardButton('/start')]]))
     message.reply_text(text, reply_markup=reply_markup)
 
 
@@ -137,10 +145,13 @@ def handle_callback(bot, update):
     query: CallbackQuery = update.callback_query
     rp_acc = {'id': "21398373",
               'gebruikersnaam': "test",
-              'level': 50}
+              'level': 25}
     # todo rp_acc ophalen uit de api. None als de id niet gekoppeld is.
-
-    message, buttons = menu.get_next_buttons(update, query.data, rp_acc)
+    try:
+        message, buttons = menu.get_next_buttons(update, query.data, rp_acc)
+    except OldMenuException as e:
+        _, buttons = menu.get_next_buttons(update, '0', rp_acc)
+        message = 'Je gebruikt een oud menu. Terug naar het hoofdmenu.'
     keyboard = [[button] for button in buttons]
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.edit_message_text(text=message,
@@ -154,5 +165,4 @@ def create_updater():
     dp = updater.dispatcher
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(CallbackQueryHandler(handle_callback))
-
     return updater
