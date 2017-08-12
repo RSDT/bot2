@@ -88,7 +88,10 @@ class Api:
     def hunter_namen(self):
         root = 'hunter'
         functie = 'hunter_namen/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
         return data
 
     def hunter_all(self, tijd=None):
@@ -96,7 +99,10 @@ class Api:
         functie = 'all/'
         if tijd is not None:
             functie += parse_time(tijd) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return data
 
     def hunter_tail(self, hunter, tijd=None):
@@ -104,7 +110,10 @@ class Api:
         functie = 'naam/tail/' + str(hunter) + '/'
         if tijd is not None:
             functie += parse_time(tijd) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return data
 
     def hunter_andere(self, hunter, tijd=None):
@@ -112,13 +121,19 @@ class Api:
         functie = 'andere/' + str(hunter) + '/'
         if tijd is not None:
             functie += parse_time(tijd) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return data
 
     def hunter_single_location(self, hunter_id):
         root = 'hunter'
         functie = str(hunter_id) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return data
 
     def vos(self, team, tijd=None, vos_id=None):
@@ -136,13 +151,28 @@ class Api:
     def _vos_last(self, team):
         root = 'vos'
         functie = team + '/last/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {"id":         "0",
+    "datetime":    "2013-10-20 00:00:00",
+    "latitude":     "0",
+    "longitude":     "0",
+    "team_naam":    team,
+    "team":    team,
+    "opmerking":     "lege data",
+    "extra":    "lege data",
+    "hint_nr":    "0",
+    "icon":        "0"}
         return data
 
     def _vos_single_location(self, team, vos_id):
         root = 'vos'
         functie = team + '/' + str(vos_id) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return data
 
     def _vos_all(self, team, tijd):
@@ -150,31 +180,46 @@ class Api:
         functie = team + '/'
         if tijd is not None:
             functie += parse_time(tijd) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
         return data
 
     def meta(self):
         root = 'meta'
         functie = ''
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return Response(data, META)
 
     def sc_all(self):
         root = 'sc'
         functie = 'all/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
         return Response(data, SC_ALL)
 
     def foto_all(self):
         root = 'foto'
         functie = 'all/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
         return Response(data, FOTO_ALL)
 
     def gebruiker_info(self):
         root = 'gebruiker'
         functie = 'info/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return Response(data, GEBRUIKER_INFO)
 
     def login(self):
@@ -199,9 +244,10 @@ class Api:
     def send_hunter_location(self, lat, lon, icon=0, hunternaam=None):
         if hunternaam is None:
             if self.hunternaam is None:
-                hunternaam = self.username + '_tg'
+                hunternaam = self.username
             else:
                 hunternaam = str(self.hunternaam)
+        hunternaam = hunternaam + '-_:;=+telegram'
         data = {'SLEUTEL': self.api_key,
                 'hunter': hunternaam,
                 'latitude': str(lat),

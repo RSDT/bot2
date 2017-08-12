@@ -4,6 +4,8 @@ from telegram import InlineKeyboardButton, Update, Message, InlineKeyboardMarkup
     ReplyKeyboardMarkup, KeyboardButton
 from typing import List, Callable, Tuple, Union,  Dict
 from threading import Lock
+
+import Updates
 from PythonApi.RPApi.Base import Api as RpApi
 
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters, MessageHandler
@@ -32,7 +34,7 @@ class Menu:
             return "Dit account is nog niet gelinked aan de RP database. " \
                    "Vraag aan de HB om dit te doen en klik daarna op start.", \
                    [InlineKeyboardButton('start', callback_data='0')]
-        self.path.append(InlineKeyboardButton('start', callback_data='0'))
+        self.path.append(callback_query)
         if callback_query == '0':
             self._get_next_buttons = self._set_up
             self.path.clear()
@@ -60,9 +62,7 @@ class Menu:
                     ]
 
     def _main_menu(self, update:Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
-        if callback_query not in ['1', '2', '3', '4']:
-           raise Exception("callback not in 1,2,3,4")
-        elif callback_query == '1':
+        if callback_query == '1':
             self._get_next_buttons = self._auto_menu
             return 'Wat is je rol in de auto?',\
                    [InlineKeyboardButton('bestuurder', callback_data='1'),
@@ -73,16 +73,17 @@ class Menu:
             self._get_next_buttons = self._updates_menu
             return 'waar wil je updates aan of uit voor zetten?',\
                    [InlineKeyboardButton('check_updates', callback_data='1'),
-                    InlineKeyboardButton('hints', callback_data='2'),
-                    InlineKeyboardButton('opdrachten', callback_data='3'),
-                    InlineKeyboardButton('nieuws', callback_data='4'),
-                    InlineKeyboardButton('Alpha', callback_data='5'),
-                    InlineKeyboardButton('Bravo', callback_data='6'),
-                    InlineKeyboardButton('Charlie', callback_data='7'),
-                    InlineKeyboardButton('Delta', callback_data='8'),
-                    InlineKeyboardButton('Echo', callback_data='9'),
-                    InlineKeyboardButton('Foxtrot', callback_data='10'),
-                    InlineKeyboardButton('X-Ray', callback_data='11')
+                    InlineKeyboardButton('hints', callback_data='h'),
+                    InlineKeyboardButton('opdrachten', callback_data='o'),
+                    InlineKeyboardButton('nieuws', callback_data='n'),
+                    InlineKeyboardButton('Alpha', callback_data='A'),
+                    InlineKeyboardButton('Bravo', callback_data='B'),
+                    InlineKeyboardButton('Charlie', callback_data='C'),
+                    InlineKeyboardButton('Delta', callback_data='D'),
+                    InlineKeyboardButton('Echo', callback_data='E'),
+                    InlineKeyboardButton('Foxtrot', callback_data='F'),
+                    InlineKeyboardButton('X-Ray', callback_data='X'),
+                    InlineKeyboardButton('error', callback_data='e')
                     ]
         elif callback_query == '3':
             self._get_next_buttons = self._admin_menu
@@ -105,8 +106,50 @@ class Menu:
         return 'Niet geimplenteerd', []
 
     def _updates_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
-        # todo implement this
-        return 'niet geimplenteerd', []
+        message = ''
+        if callback_query == '1':
+            for u in Updates.get_updates().check_updates(update.effective_chat.id):
+                message += u + '\n'
+            return message, []
+        else:
+            self._get_next_buttons = self._updates_aan_uit_menu
+            message = 'updates voor ' + str(self.path[-1]) + ' aan of uit zetten.'
+            return message, [
+                InlineKeyboardButton('aan', callback_data='a'),
+                InlineKeyboardButton('uit', callback_data='u')
+            ]
+
+    def _updates_aan_uit_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
+        updates = Updates.get_updates()
+        message = ''
+        zet_aan = callback_query == 'a'
+        if zet_aan:
+            message = 'updates voor ' + str(self.path[-2]) + ' zijn aangezet.'
+        else:
+            message = 'updates voor ' + str(self.path[-2]) + ' zijn uitgezet.'
+        if self.path[-2] == 'A':
+            updates.set_updates(update.effective_chat.id, Updates.ALPHA, zet_aan)
+        elif self.path[-2] == 'B':
+            updates.set_updates(update.effective_chat.id, Updates.BRAVO, zet_aan)
+        elif self.path[-2] == 'C':
+            updates.set_updates(update.effective_chat.id, Updates.CHARLIE, zet_aan)
+        elif self.path[-2] == 'D':
+            updates.set_updates(update.effective_chat.id, Updates.DELTA, zet_aan)
+        elif self.path[-2] == 'E':
+            updates.set_updates(update.effective_chat.id, Updates.ECHO, zet_aan)
+        elif self.path[-2] == 'F':
+            updates.set_updates(update.effective_chat.id, Updates.FOXTROT, zet_aan)
+        elif self.path[-2] == 'X':
+            updates.set_updates(update.effective_chat.id, Updates.XRAY, zet_aan)
+        elif self.path[-2] == 'h':
+            updates.set_updates(update.effective_chat.id, Updates.HINTS, zet_aan)
+        elif self.path[-2] == 'n':
+            updates.set_updates(update.effective_chat.id, Updates.NIEUWS, zet_aan)
+        elif self.path[-2] == 'o':
+            updates.set_updates(update.effective_chat.id, Updates.OPDRACHTEN, zet_aan)
+        elif self.path[-2] == 'e':
+            updates.set_updates(update.effective_chat.id, Updates.ERROR, zet_aan)
+        return message, []
 
     def _admin_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         # todo implement this
@@ -117,6 +160,8 @@ class Menu:
         return 'niet geimplenteerd', []
 
 welcome_message = "welkom bij de bot voor de jotihunt bot!"
+
+
 def start(bot: Bot, update: Update):
     message: Message = update.message
     with menus_lock:
@@ -128,7 +173,7 @@ def start(bot: Bot, update: Update):
         menu = menus[message.chat_id]
     rp_acc = {'id': "21398373",
               'gebruikersnaam': "test",
-              'level': 25}
+              'level': 50}
     # todo rp_acc ophalen uit de api. None als de id niet gekoppeld is.
     text, buttons = menu.get_next_buttons(update, '0', rp_acc)
     keyboard = [[button] for button in buttons]
@@ -150,7 +195,7 @@ def handle_callback(bot, update):
     query: CallbackQuery = update.callback_query
     rp_acc = {'id': "21398373",
               'gebruikersnaam': "test",
-              'level': 25}
+              'level': 50}
     # todo rp_acc ophalen uit de api. None als de id niet gekoppeld is.
     try:
         message, buttons = menu.get_next_buttons(update, query.data, rp_acc)
@@ -171,13 +216,13 @@ def location_handler(bot, update):
         try:
             api.send_hunter_location(update.effective_message.location.latitude, update.effective_message.location.longitude, hunternaam=update.effective_message.from_user.name)
         except JSONDecodeError as e:
-            bot.send_message(update.effective_chat.id, 'locatie verzonden', reply_to_message_id=update.effective_message.id)
+            bot.send_message(update.effective_chat.id, 'locatie verzonden', reply_to_message_id=update.effective_message.message_id)
         except Exception as e:
             bot.send_message(update.effective_chat.id, 'error: locatie waarschijnlijk niet verzonden', reply_to_message_id=update.effective_message.id)
             raise e
         else:
             bot.send_message(update.effective_chat.id, 'locatie verzonden',
-                             reply_to_message_id=update.effective_message.id)
+                             reply_to_message_id=update.effective_message.message_id)
 
 
 def create_updater():
