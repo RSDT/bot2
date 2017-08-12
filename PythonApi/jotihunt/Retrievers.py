@@ -1,5 +1,10 @@
 import random
+from json import JSONDecodeError
+
+import logging
 import requests
+import time
+
 from PythonApi.jotihunt.Base import Response, NIEUWS, OPDRACHT, NIEUWSLIJST,\
     HINTS, HINT, OPDRACHTEN, SCORELIJST, VOSSEN
 
@@ -113,23 +118,56 @@ test_nieuws = {
     },
 }
 
+last_error_update = None
+
+
+def error_nieuws():
+    global last_error_update
+    if last_error_update is None:
+        last_error_update = time.time()
+    elif time.time() - last_error_update > 300:
+        last_error_update = time.time()
+    return {
+        "version": "1.0",
+        'last_update': last_error_update,
+        'data': [{"ID": 'error_id_' + str(last_error_update),
+        "titel": "De bot kan de website van de jothunt niet meer uitlezen. Waarschijnlijk is de website neer."
+                 " De vos status wordt op oranje gezet tot de website het weer doet."
+                 " Dit is niet de echte status van de vossen."
+                 "De website tenminste de komende 5 minuten zelf in de gaten houden.",
+        "datum": last_error_update,
+        "inhoud": "html text error",
+        "eindtijd": last_error_update + 100,
+        "maxpunten": 0}]
+    }
+
+
 def get_nieuws(nieuws_id):
     if not DEBUG:
         url = _base_url + "nieuws/" + str(nieuws_id)
         r = requests.get(url)
-        json = r.json()
+        try:
+            json = r.json()
+        except JSONDecodeError as e:
+            logging.exception('jotihunt site is neer')
+            json = error_nieuws()
         return Response(json, NIEUWS)
     else:
         return Response({'version': "1.0",
                 'last_update': 1475611690,
-                'data': [test_nieuws[nieuws_id]]},NIEUWS)
+                'data': [test_nieuws[nieuws_id]]}, NIEUWS)
 
 
 def get_opdracht(opdracht_id):
     if not DEBUG:
         url = _base_url + "opdracht/" + str(opdracht_id)
         r = requests.get(url)
-        return Response(r.json(), OPDRACHT)
+        try:
+            json = r.json()
+        except JSONDecodeError as e:
+            logging.exception('jotihunt site is neer')
+            json = error_nieuws()
+        return Response(json, OPDRACHT)
     else:
         return Response({'version': "1.0",
                 'last_update': 1475611690,
@@ -140,7 +178,12 @@ def get_hint(hint_id):
     if not DEBUG:
         url = _base_url + "hint/" + str(hint_id)
         r = requests.get(url)
-        return Response(r.json(), HINT)
+        try:
+            json = r.json()
+        except JSONDecodeError as e:
+            logging.exception('jotihunt site is neer')
+            json = error_nieuws()
+        return Response(json, HINT)
     else:
         return Response({'version': "1.0",
                 'last_update': 1475611690,
@@ -151,7 +194,11 @@ def get_nieuws_lijst():
     if not DEBUG:
         url = _base_url + "nieuws"
         r = requests.get(url)
-        json = r.json()
+        try:
+            json = r.json()
+        except JSONDecodeError as e:
+            logging.exception('jotihunt site is neer')
+            json = error_nieuws()
         return Response(json, NIEUWSLIJST)
     else:
         r = {'version': "1.0",
@@ -171,11 +218,17 @@ def get_nieuws_lijst():
             r['data'].append(n)
         return Response(r, NIEUWSLIJST)
 
+
 def get_opdrachten():
     if not DEBUG:
         url = _base_url + "opdracht"
         r = requests.get(url)
-        return Response(r.json(), OPDRACHTEN)
+        try:
+            json = r.json()
+        except JSONDecodeError as e:
+            logging.exception('jotihunt site is neer')
+            json = error_nieuws()
+        return Response(json, OPDRACHTEN)
     else:
         r = {'version': "1.0",
                 'last_update': 1475611690,
@@ -201,7 +254,12 @@ def get_hints():
     if not DEBUG:
         url = _base_url + "hint"
         r = requests.get(url)
-        return Response(r.json(), HINTS)
+        try:
+            json = r.json()
+        except JSONDecodeError as e:
+            logging.exception('jotihunt site is neer')
+            json = error_nieuws()
+        return Response(json, HINTS)
     else:
 
         r = {'version': "1.0",
@@ -225,14 +283,34 @@ def get_hints():
 def get_scorelijst():
     url = _base_url + "scorelijst"
     r = requests.get(url)
-    return Response(r.json(), SCORELIJST)
+    try:
+        json = r.json()
+    except JSONDecodeError as e:
+        logging.exception('jotihunt site is neer')
+        json = {'version': "1.0",
+                'last_update': 1475611690,
+                'data': []}
+    return Response(json, SCORELIJST)
 
 
 def get_vossen():
     if not DEBUG:
         url = _base_url + "vossen"
         r = requests.get(url)
-        json = r.json()
+        try:
+            json = r.json()
+        except JSONDecodeError as e:
+            logging.error('jotihunt site is neer')
+            json = {
+                'version': 'error',
+                'last_update': 1475611690,
+                'data': [{'team': 'Alpha', 'status': 'oranje'},
+                         {'team': 'Bravo', 'status': 'oranje'},
+                         {'team': 'Charlie', 'status': 'oranje'},
+                         {'team': 'Echo', 'status': 'oranje'},
+                         {'team': 'Delta', 'status': 'oranje'},
+                         {'team': 'Foxtrot', 'status': 'oranje'},
+                             ]}
         json['data'].append({'team': 'XRay',
                             'status': 'oranje'})
         return Response(json, VOSSEN)
