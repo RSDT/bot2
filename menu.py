@@ -1,9 +1,12 @@
+from json import JSONDecodeError
+
 from telegram import InlineKeyboardButton, Update, Message, InlineKeyboardMarkup, CallbackQuery, Bot, \
     ReplyKeyboardMarkup, KeyboardButton
 from typing import List, Callable, Tuple, Union,  Dict
 from threading import Lock
+from PythonApi.RPApi.Base import Api as RpApi
 
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters, MessageHandler
 
 import settings
 
@@ -113,7 +116,7 @@ class Menu:
         # todo implement this
         return 'niet geimplenteerd', []
 
-
+welcome_message = "welkom bij de bot voor de jotihunt bot!"
 def start(bot: Bot, update: Update):
     message: Message = update.message
     with menus_lock:
@@ -130,7 +133,9 @@ def start(bot: Bot, update: Update):
     text, buttons = menu.get_next_buttons(update, '0', rp_acc)
     keyboard = [[button] for button in buttons]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    bot.send_message(update.effective_chat.id, "welkom bij de bot voor de jotihunt bot!", reply_markup=ReplyKeyboardMarkup([[KeyboardButton('/start')]]))
+    keyboard= ReplyKeyboardMarkup([[KeyboardButton('/start')]
+                                   , [KeyboardButton('verstuur hunter locatie', request_location=True)]])
+    bot.send_message(update.effective_chat.id, welcome_message, reply_markup=keyboard)
     message.reply_text(text, reply_markup=reply_markup)
 
 
@@ -160,9 +165,25 @@ def handle_callback(bot, update):
                           message_id=query.message.message_id)
 
 
+def location_handler(bot, update):
+    if update.effective_message.reply_to_message.text == welcome_message:
+        api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+        try:
+            api.send_hunter_location(update.effective_message.location.latitude, update.effective_message.location.longitude, hunternaam=update.effective_message.from_user.name)
+        except JSONDecodeError as e:
+            bot.send_message(update.effective_chat.id, 'locatie verzonden', reply_to_message_id=update.effective_message.id)
+        except Exception as e:
+            bot.send_message(update.effective_chat.id, 'error: locatie waarschijnlijk niet verzonden', reply_to_message_id=update.effective_message.id)
+            raise e
+        else:
+            bot.send_message(update.effective_chat.id, 'locatie verzonden',
+                             reply_to_message_id=update.effective_message.id)
+
+
 def create_updater():
     updater = Updater(token=settings.Settings().bot_key)
     dp = updater.dispatcher
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(CallbackQueryHandler(handle_callback))
+    dp.add_handler(MessageHandler(Filters.location, location_handler))
     return updater

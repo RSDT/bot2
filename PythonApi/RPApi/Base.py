@@ -196,11 +196,12 @@ class Api:
         finally:
             self.api_key_lock.release()
 
-    def send_hunter_location(self, lat, lon, icon=0):
-        if self.hunternaam is None:
-            hunternaam = self.username
-        else:
-            hunternaam = str(self.hunternaam)
+    def send_hunter_location(self, lat, lon, icon=0, hunternaam=None):
+        if hunternaam is None:
+            if self.hunternaam is None:
+                hunternaam = self.username + '_tg'
+            else:
+                hunternaam = str(self.hunternaam)
         data = {'SLEUTEL': self.api_key,
                 'hunter': hunternaam,
                 'latitude': str(lat),

@@ -117,7 +117,6 @@ def create_updater() -> Updater:
         dp.add_handler(command_handler_with_help)
     return updater
 
-
 @void_no_crash()
 @authenticate()
 def set_phpsessid(bot, update):
