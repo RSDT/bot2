@@ -241,6 +241,15 @@ class Api:
         finally:
             self.api_key_lock.release()
 
+    def send_telegram_user(self, telegramID, telegramVoornaam, telegramAchternaam='onbekend', telegramGebruikersnaam='onbekend'):
+        data = {"SLEUTEL": self.api_key,
+            "telegramID": telegramID,
+            "telegramVoornaam":     telegramVoornaam or 'onbekend',
+            "telegramAchternaam":    telegramAchternaam or 'onbekend',
+            "telegramGebruikersnaam":     telegramGebruikersnaam or 'onbekend'}
+        root = 'telegram'
+        self._send_request(root,data=data)
+
     def send_hunter_location(self, lat, lon, icon=0, hunternaam=None):
         if hunternaam is None:
             if self.hunternaam is None:
