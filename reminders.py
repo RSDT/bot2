@@ -1,5 +1,9 @@
 import math
-#import requests
+
+import threading
+
+import requests
+
 
 import Updates
 import settings
@@ -8,8 +12,6 @@ import time
 import random
 from telegram import ParseMode
 from tokens import DEBUG
-
-#url = 'https://mattijnkreuzen.nl/opdrachten/check_opdracht_klaar.php'
 
 
 def convert_tijden(waarde, eenheid='seconden'):
@@ -22,6 +24,27 @@ def convert_tijden(waarde, eenheid='seconden'):
     if eenheid in ['dagen', 'd', 'days', 'dag', 'day']:
         return convert_tijden(waarde * 24, 'uur')
 
+
+opdrachtreminders_lock = threading.Lock()
+opdrachtreminders = dict()
+
+
+def done(opdracht_id):
+    with opdrachtreminders_lock:
+        opdrachtreminders[opdracht_id] = False
+
+
+def check_reminder(opdracht_id)-> bool:
+    with opdrachtreminders_lock:
+        if opdracht_id in opdrachtreminders:
+            return opdrachtreminders[opdracht_id]
+        else:
+            return True
+
+
+def reset_reminder(opdracht_id):
+    with opdrachtreminders_lock:
+        opdrachtreminders[opdracht_id] = True
 
 class Reminder:
     def __init__(self, opdracht, chat_ids):
@@ -45,20 +68,10 @@ class Reminder:
         self.chat_ids = chat_ids
 
     def check_remind(self):
-        try:
-            data = {
-                'opdracht_id': self.opdracht_id,
-                'naam': self.titel,
-                'maxpunten': self.maxpunten,
-                'eindtijd': self.eindtijd,
-                'SLEUTEL': settings.Settings().SLEUTEL
-            }
-            r = requests.post(url=url, json=data)
-            json = r.json()
-            return not json['verified']
-        except Exception as e:
-            logging.error('Login error, return True' + str(e))
-            return True
+        with opdrachtreminders_lock:
+            if self.opdracht_id not in opdrachtreminders:
+                opdrachtreminders[self.opdracht_id] = True
+            return opdrachtreminders[self.opdracht_id]
 
     def remaining_time(self, eenheid='seconden'):
         """Return de tijd tot de opdracht moet worden ingeleverd in eenheid. """

@@ -1,13 +1,15 @@
 import threading
+from json import JSONDecodeError
 
+import logging
 import requests
 from PythonApi.Base.Exceptions import VerificationError, BannedError, \
-    NoDataError, UndocumatedStatusCodeError, IAmATheaPotError, UnkownKeyError, ToSoonReloginError
+    NoDataError, UndocumatedStatusCodeError, IAmATheaPotError, UnkownKeyError
 from hashlib import sha1
 import json
 import time
 
-VOS, META, SC_ALL, FOTO_ALL, GEBRUIKER_INFO = range(5)
+VOS, META, SC_ALL, FOTO_ALL, GEBRUIKER_INFO, TELEGRAM_LINK = range(6)
 
 
 def parse_time(tijd):
@@ -26,38 +28,64 @@ def _retry_with_new_key_on_error(func):
     return decorate
 
 
+def t_safe():
+    def decorate(func):
+        def call(self, *args, **kwargs):
+            with self.lock:
+                return func(self, *args, **kwargs)
+        return call
+    return decorate
+
+
 class Api:
     instances = dict()
+    instances_lock = threading.Lock()
 
     def __init__(self, username, hashed_password):
+        self.lock = threading.Lock()
+        self._api_key = None
         self.username = username
         self.hashed_password = hashed_password
         self.last_update = None
         self.api_key = None
+
         self.hunternaam = None
-        self.api_key_lock = threading.RLock()
-        self._base_url = 'http://jotihunt-API-V2.area348.nl/'
-        self.login()
+        self.api_key_lock = threading.Lock()
+        self._base_url = 'http://jotihunt-API-V3.area348.nl/'
+
+    @property
+    def api_key(self):
+        return self._api_key
+
+    @api_key.setter
+    def api_key(self, key):
+        if self._api_key is None or key is not None:
+            self._api_key = key
 
     @staticmethod
     def get_instance(username, password):
-        if username not in Api.instances:
-            hasher = sha1()
-            hasher.update(password.encode('utf-8'))
-            hashed_password = hasher.hexdigest()
-            Api.instances[username] = Api(username, hashed_password)
-        else:
-            pass
-        return Api.instances[username]
+        with Api.instances_lock:
+            if username not in Api.instances:
+                hasher = sha1()
+                hasher.update(password.encode('utf-8'))
+                hashed_password = hasher.hexdigest()
+                Api.instances[username] = Api(username, hashed_password)
+            else:
+                pass
+            instances = Api.instances
+            instance: Api = instances[username]
+            return instance
 
     def _send_request(self, root, functie="", data=None):
         r_val = None
         try:
             if self.api_key is None and root != 'login':
-                raise UnkownKeyError(root)
+                time.sleep(10)
+                if self._api_key is None:
+                    self.login()
             max_t = 24 * 60 * 60  # 1 dag
             if self.last_update is None or time.time() - self.last_update > max_t:
-                self.login()
+                raise UnkownKeyError(root)
             else:
                 self.last_update = time.time()
             if data is None:
@@ -85,42 +113,63 @@ class Api:
     _send_request_b = _send_request
     _send_request = _retry_with_new_key_on_error(_send_request_b)
 
+    @t_safe()
     def hunter_namen(self):
         root = 'hunter'
         functie = 'hunter_namen/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
         return data
 
+    @t_safe()
     def hunter_all(self, tijd=None):
         root = 'hunter'
         functie = 'all/'
         if tijd is not None:
             functie += parse_time(tijd) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return data
 
+    @t_safe()
     def hunter_tail(self, hunter, tijd=None):
         root = 'hunter'
         functie = 'naam/tail/' + str(hunter) + '/'
         if tijd is not None:
             functie += parse_time(tijd) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return data
 
+    @t_safe()
     def hunter_andere(self, hunter, tijd=None):
         root = 'hunter'
         functie = 'andere/' + str(hunter) + '/'
         if tijd is not None:
             functie += parse_time(tijd) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return data
 
+    @t_safe()
     def hunter_single_location(self, hunter_id):
         root = 'hunter'
         functie = str(hunter_id) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return data
 
+    @t_safe()
     def vos(self, team, tijd=None, vos_id=None):
         t = None
         if vos_id is None and tijd is None:
@@ -136,13 +185,28 @@ class Api:
     def _vos_last(self, team):
         root = 'vos'
         functie = team + '/last/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {"id":         "0",
+    "datetime":    "2013-10-20 00:00:00",
+    "latitude":     "0",
+    "longitude":     "0",
+    "team_naam":    team,
+    "team":    team,
+    "opmerking":     "lege data",
+    "extra":    "lege data",
+    "hint_nr":    "0",
+    "icon":        "0"}
         return data
 
     def _vos_single_location(self, team, vos_id):
         root = 'vos'
         functie = team + '/' + str(vos_id) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return data
 
     def _vos_all(self, team, tijd):
@@ -150,38 +214,59 @@ class Api:
         functie = team + '/'
         if tijd is not None:
             functie += parse_time(tijd) + '/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
         return data
 
+    @t_safe()
     def meta(self):
         root = 'meta'
         functie = ''
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return Response(data, META)
 
+    @t_safe()
     def sc_all(self):
         root = 'sc'
         functie = 'all/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
         return Response(data, SC_ALL)
 
+    @t_safe()
     def foto_all(self):
         root = 'foto'
         functie = 'all/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
         return Response(data, FOTO_ALL)
 
+    @t_safe()
     def gebruiker_info(self):
         root = 'gebruiker'
         functie = 'info/'
-        data = self._send_request(root, functie)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = {}
         return Response(data, GEBRUIKER_INFO)
 
+    @t_safe()
     def login(self):
         if self.last_update is not None and \
                                 time.time() - self.last_update < \
                 120:
-            raise ToSoonReloginError(time.time() - self.last_update)
+            return
+            # raise ToSoonReloginError(time.time() - self.last_update)
         self.api_key_lock.acquire()
         try:
             data = {'gebruiker': self.username, 'ww': self.hashed_password}
@@ -196,11 +281,29 @@ class Api:
         finally:
             self.api_key_lock.release()
 
-    def send_hunter_location(self, lat, lon, icon=0):
-        if self.hunternaam is None:
-            hunternaam = self.username
-        else:
-            hunternaam = str(self.hunternaam)
+    @t_safe()
+    def send_telegram_user(self, telegramID, telegramVoornaam, telegramAchternaam='onbekend', telegramGebruikersnaam='onbekend'):
+        data = {"SLEUTEL": self.api_key,
+            "telegramID": telegramID,
+            "telegramVoornaam":     telegramVoornaam or 'onbekend',
+            "telegramAchternaam":    telegramAchternaam or 'onbekend',
+            "telegramGebruikersnaam":     telegramGebruikersnaam or 'onbekend'}
+        root = 'telegram'
+        try:
+            self._send_request(root, data=data)
+        except JSONDecodeError as e:
+            logging.error(e)
+        except Exception as e:
+            raise e
+
+    @t_safe()
+    def send_hunter_location(self, lat, lon, icon=0, hunternaam=None):
+        if hunternaam is None:
+            if self.hunternaam is None:
+                hunternaam = self.username
+            else:
+                hunternaam = str(self.hunternaam)
+        hunternaam = hunternaam + '-_:;=+telegram'
         data = {'SLEUTEL': self.api_key,
                 'hunter': hunternaam,
                 'latitude': str(lat),
@@ -209,6 +312,7 @@ class Api:
         root = 'hunter'
         self._send_request(root, data=data)
 
+    @t_safe()
     def send_vos_location(self, team, lat, lon, icon=0, info='-'):
         if self.hunternaam is None:
             hunternaam = self.username
@@ -222,6 +326,16 @@ class Api:
                 'longitude': str(lon), 'icon': str(icon), 'info': str(info)}
         self._send_request(root, data=data)
 
+    @t_safe()
+    def get_telegram_link(self, telegram_id):
+        root = 'telegram'
+        functie = str(telegram_id) + '/'
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = None
+        return Response(data, TELEGRAM_LINK)
+
 
 class Response:
     def __init__(self, json, type):
@@ -231,10 +345,14 @@ class Response:
     def __eq__(self, other):
         if other is None:
             return False
-        if other.type != self.type:
+        if not isinstance(other, Response):
             return False
-        if self.type == VOS:
+        elif other.type != self.type:
+            return False
+        elif self.type == VOS:
             return self.data['id'] == other.data['id']
+        else:
+            return self.data == other.data
 
     def __getitem__(self, item):
         return self.data[item]

@@ -42,8 +42,11 @@ def authenticate():
             chat_id = update.message.chat_id
             user_id = update.message.from_user.id
             username = update.message.from_user.name
-            chat_name = update.message.chat.title or update.message.from_user.name
-            if authenticator.authenticate_chat(updater, user_id, chat_id,
+            chat_name = update.message.chat.title or (
+                update.message.chat.first_name + ' ' +
+                (update.message.chat.last_name or ''))
+            if authenticator.authenticate_chat(user_id, chat_id,
+                                               settings.Settings().SLEUTEL,
                                                username, chat_name):
                 return func(bot, update)
             else:

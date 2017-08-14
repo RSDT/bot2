@@ -82,7 +82,7 @@ def error_handler(bot: telegram.Bot, update: telegram.Update, error):
     Updates.get_updates().error(error, "Updater")
 
 
-def create_updater():
+def create_updater() -> Updater:
     updater = Updater(token=settings.Settings().bot_key)
     dp = updater.dispatcher
     help_updates = 'zet updates aan of uit voor diverse events'
@@ -118,7 +118,6 @@ def create_updater():
         dp.add_handler(command_handler_with_help)
     wrappers.setUpdater(updater)
     return updater
-
 
 @void_no_crash()
 @authenticate()

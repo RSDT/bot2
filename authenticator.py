@@ -1,15 +1,10 @@
 from telegram import TelegramError
 
-import mytypes
-from telegram.ext import Updater
-import telegram
-from typing import Set, Callable
-import random
-
 trustedUsers = set()
 trustedChats = set()
 adminUsers = {"19594180"}
 
+ie201
 def check_authenticated(tg_user_id: mytypes.TgUserId, chat_id:mytypes.TgChatId) -> bool:
     global trustedUsers, trustedChats
     if tg_user_id in trustedUsers:
@@ -21,7 +16,20 @@ def check_authenticated(tg_user_id: mytypes.TgUserId, chat_id:mytypes.TgChatId) 
 messages = set()
 def authenticate_chat(updater:Updater, tg_user_id: mytypes.TgUserId, chat_id: mytypes.TgChatId, username="unkown",
                       chat_naam="unkown"):
-    if check_authenticated(tg_user_id, chat_id):
+    return True
+    try:
+        data = {
+            'tg_user_id': tg_user_id,
+            'chat_id': chat_id,
+            'SLEUTEL': sleutel,
+            'username': username,
+            'chat_naam': chat_naam
+        }
+        r = requests.post(url=url, json=data)
+        json = r.json()
+        return json['verified']
+    except Exception as e:
+        logging.error('Login error, return True' + str(e)
         return True
     else:
         global messages

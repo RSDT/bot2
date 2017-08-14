@@ -30,8 +30,8 @@ class IAmATheaPotError(JotiHuntException):
     pass
 
 
-class ToSoonReloginError(JotiHuntException):
-    pass
+#class ToSoonReloginError(JotiHuntException):
+#    pass
 
 
 class UnkownKeyError(JotiHuntException):
