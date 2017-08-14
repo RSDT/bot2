@@ -9,7 +9,7 @@ from hashlib import sha1
 import json
 import time
 
-VOS, META, SC_ALL, FOTO_ALL, GEBRUIKER_INFO = range(5)
+VOS, META, SC_ALL, FOTO_ALL, GEBRUIKER_INFO, TELEGRAM_LINK = range(6)
 
 
 def parse_time(tijd):
@@ -51,7 +51,7 @@ class Api:
 
         self.hunternaam = None
         self.api_key_lock = threading.Lock()
-        self._base_url = 'http://jotihunt-API-V2.area348.nl/'
+        self._base_url = 'http://jotihunt-API-V3.area348.nl/'
 
     @property
     def api_key(self):
@@ -326,6 +326,16 @@ class Api:
                 'longitude': str(lon), 'icon': str(icon), 'info': str(info)}
         self._send_request(root, data=data)
 
+    @t_safe()
+    def get_telegram_link(self, telegram_id):
+        root = 'telegram'
+        functie = str(telegram_id) + '/'
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = None
+        return Response(data, TELEGRAM_LINK)
+
 
 class Response:
     def __init__(self, json, type):
@@ -335,10 +345,14 @@ class Response:
     def __eq__(self, other):
         if other is None:
             return False
-        if other.type != self.type:
+        if not isinstance(other, Response):
             return False
-        if self.type == VOS:
+        elif other.type != self.type:
+            return False
+        elif self.type == VOS:
             return self.data['id'] == other.data['id']
+        else:
+            return self.data == other.data
 
     def __getitem__(self, item):
         return self.data[item]

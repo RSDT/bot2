@@ -32,6 +32,18 @@ def done(opdracht_id):
         opdrachtreminders[opdracht_id] = False
 
 
+def check_reminder(opdracht_id)-> bool:
+    with opdrachtreminders_lock:
+        if opdracht_id in opdrachtreminders:
+            return opdrachtreminders[opdracht_id]
+        else:
+            return True
+
+
+def reset_reminder(opdracht_id):
+    with opdrachtreminders_lock:
+        opdrachtreminders[opdracht_id] = True
+
 class Reminder:
     def __init__(self, opdracht, chat_ids):
         self.maxpunten = opdracht.data.maxpunten

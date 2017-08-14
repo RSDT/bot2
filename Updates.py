@@ -370,7 +370,7 @@ class MyUpdates:
             for t in threads:
                 t.start()
             self.update_foto_opdracht()
-            # self.update_mail()
+            self.update_mail()
             self.update_hunts()
             self._last_update = time.time()
             start = time.time()

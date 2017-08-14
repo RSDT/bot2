@@ -1,6 +1,5 @@
 import os
 import pickle
-from _signal import SIGINT
 from json import JSONDecodeError
 
 import sys
@@ -10,12 +9,14 @@ from typing import List, Callable, Tuple, Union,  Dict
 from threading import Lock
 
 import Updates
+import reminders
 from IdsObserver import IdsObserver
 from PythonApi.RPApi.Base import Api as RpApi
 
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters, MessageHandler
 
 import settings
+
 STARTUPFILE = 'startup.jhu'
 
 menus = dict()
@@ -60,7 +61,7 @@ class Menu:
         if callback_query != '0':
             raise OldMenuException("verkeerde callback_querry !=0 ")
         self._get_next_buttons = self._main_menu
-        if rp_acc.get("level", 25) >= 50:
+        if int(rp_acc.get("toegangslvl", 25)) >= 50:
             return 'Welkom Bij de bot. Wat wil je doen?',\
                    [InlineKeyboardButton('auto', callback_data='1'),
                     InlineKeyboardButton('updates', callback_data='2'),
@@ -144,7 +145,7 @@ class Menu:
             for u in Updates.get_updates().check_updates(update.effective_chat.id):
                 message += u + '\n'
             return message, []
-        elif callback_query in ['a', 'u']:
+        elif callback_query in ['hints', 'opdracht', 'nieuws', 'error', 'A', 'B', 'C', 'D', 'E', 'F', 'X']:
             self._get_next_buttons = self._updates_aan_uit_menu
             message = 'updates voor ' + str(self.path[-1]) + ' aan of uit zetten.'
             return message, [
@@ -249,20 +250,20 @@ class Menu:
                    '_admin_menu_updates_group_2, ' + str(callback_query), []
 
     def _admin_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
-        if callback_query == '1':
+        if callback_query == 'a_1':
             return 'niet geimplenteerd', []
-        elif callback_query in ['uit', 'aaan']:
+        elif callback_query in ['uit', 'aan']:
             chats = IdsObserver()
             buttons = []
             self._get_next_buttons = self._admin_menu_updates_group_1
             for tid in chats.group_chats:
                 buttons.append(InlineKeyboardButton(chats.group_chats[tid], callback_data=str(tid)))
             return 'voor welke chat wil je uupdates aan of uitzetten?', buttons
-        elif callback_query == '4':
+        elif callback_query == 'a_4':
             users = IdsObserver()
             users.send_users_buffer()
             return 'gebruikers zijn naar de site gestuurd', []
-        elif callback_query == '5':
+        elif callback_query == 'a_5':
             users = IdsObserver()
             with users.users_lock:
                 buttons = []
@@ -270,9 +271,34 @@ class Menu:
                     buttons.append(InlineKeyboardButton(users.getName(user_id), callback_data=str(user_id)))
             self._get_next_buttons = self._admin_menu_remove_user
             return 'welke gebruiker moet worden verwijder uit de buffer?', buttons
+        elif callback_query in ['reminder_uit', 'reminder_aan']:
+            self._get_next_buttons = self._reminder_menu
+            updates = Updates.get_updates()
+            with updates._reminders_lock:
+                buttons = []
+                for opdracht_id in updates.reminders:
+                    reminder: reminders.Reminder = updates.reminders[opdracht_id]
+                    message = reminder.titel
+                    if reminders.check_reminder(opdracht_id):
+                        message += ' ;staat nu aan'
+                    else:
+                        message += ' ;staat nu uit'
+                    buttons.append(InlineKeyboardButton(message, callback_data=opdracht_id))
+            return 'waar wil je reminders aan of uit voor zetten?', buttons
         else:
             return 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
                    'admin_menu, ' + str(callback_query), []
+
+    def _reminder_menu(self, update, callback_querry, rp_acc):
+        zet_aan = self.path[-2] == 'reminder_aan'
+        opdracht_id = self.path[-1]
+        if zet_aan:
+            message = 'reminders aangezet'
+            reminders.reset_reminder(opdracht_id)
+        else:
+            message = 'reminders uitgezet'
+            reminders.done(opdracht_id)
+        return message, []
 
     def _admin_menu_remove_user(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         users = IdsObserver()
@@ -302,10 +328,16 @@ def start(bot: Bot, update: Update):
             # todo remove old keyboard and replace with the new one?
             pass
         menu = menus[message.chat_id]
-    rp_acc = {'id': "21398373",
-              'gebruikersnaam': "test",
-              'level': 50}
-    # todo rp_acc ophalen uit de api. None als de id niet gekoppeld is.
+    api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+    response = api.get_telegram_link(update.effective_user.id)
+    rp_acc = response.data
+    if rp_acc is None:
+        user: User = update.effective_user
+        api.send_telegram_user(user.id, user.first_name, user.last_name, user.username)
+        bot.send_message(update.effective_chat.id, 'Je telegram account is nog niet gelinkt.'
+                                                   'Vraag aan de homebase of ze dat willen doen. '
+                                                   'En zeg daarna /start.',
+                         reply_to_message_id=update.effective_message.message_id)
     text, buttons = menu.get_next_buttons(update, '0', rp_acc)
     keyboard = [[button] for button in buttons]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -327,10 +359,9 @@ def handle_callback(bot, update):
             pass
         menu = menus[update.effective_chat.id]
     query: CallbackQuery = update.callback_query
-    rp_acc = {'id': "21398373",
-              'gebruikersnaam': "test",
-              'level': 50}
-    # todo rp_acc ophalen uit de api. None als de id niet gekoppeld is.
+    api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+    response = api.get_telegram_link(update.effective_user.id)
+    rp_acc = response.data
     try:
         message, buttons = menu.get_next_buttons(update, query.data, rp_acc)
     except OldMenuException as e:
@@ -345,6 +376,15 @@ def handle_callback(bot, update):
 
 
 def location_handler(bot, update):
+    api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+    response = api.get_telegram_link(update.effective_user.id)
+    rp_acc = response.data
+    if rp_acc is None:
+        user: User = update.effective_user
+        api.send_telegram_user(user.id, user.first_name, user.last_name, user.username)
+        bot.send_message(update.effective_chat.id, 'Je telegram account is nog niet gelinkt.'
+                                                   ' vraag aan de homebase of ze dat willen doen.',
+                         reply_to_message_id=update.effective_message.message_id)
     if update.effective_message.reply_to_message.text == welcome_message:
         api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
         try:
@@ -371,6 +411,20 @@ def users_handler(bot, update):
 
 def stop(updater: Updater):
     def handler(bot, update):
+        api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+        response = api.get_telegram_link(update.effective_user.id)
+        rp_acc = response.data
+        if rp_acc is None:
+            bot.send_message(update.effective_chat.id, 'Je telegram account is nog niet gelinkt.'
+                                                       ' vraag aan de homebase of ze dat willen doen.',
+                             reply_to_message_id=update.effective_message.message_id)
+            return
+        if int(rp_acc['toegangslvl']) < 75 and int(update.effective_user.id)\
+                != 19594180:
+            bot.send_message(update.effective_chat.id, 'Je bent niet gemachtigd om dit commando uit te voeren',
+                             reply_to_message_id=update.effective_message.message_id)
+            return
+
         bot.send_message(update.effective_chat.id, "bot gaat stoppen.")
         try:
             updates: Updates = Updates.get_updates()
@@ -388,7 +442,19 @@ def stop(updater: Updater):
 
 
 def restart(bot, update):
-    bot.send_message(update.effective_chat.id, "bot gaat stoppen.")
+    api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+    response = api.get_telegram_link(update.effective_user.id)
+    rp_acc = response.data
+    if rp_acc is None:
+        bot.send_message(update.effective_chat.id, 'Je telegram account is nog niet gelinkt.'
+                                                   ' vraag aan de homebase of ze dat willen doen.',
+                         reply_to_message_id=update.effective_message.message_id)
+        return
+    if int(rp_acc['toegangslvl']) < 75 and int(update.effective_user.id) != 19594180:
+        bot.send_message(update.effective_chat.id, 'Je bent niet gemachtigd om dit commando uit te voeren',
+                         reply_to_message_id=update.effective_message.message_id)
+        return
+    bot.send_message(update.effective_chat.id, "bot gaat herstarten.")
     try:
         updates: Updates = Updates.get_updates()
         updates.to_all('de bot gaat herstarten')
@@ -400,6 +466,7 @@ def restart(bot, update):
     except Exception as e:
         print(e)
         raise e
+
 
 def create_updater():
     updater = Updater(token=settings.Settings().bot_key)
