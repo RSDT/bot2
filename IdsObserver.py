@@ -28,7 +28,10 @@ class IdsObserver:
         api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
         with self.users_lock:
             for tid in self.user_buffer:
-                api.send_telegram_user(**self.user_buffer[tid])
+                try:
+                    api.send_telegram_user(**self.user_buffer[tid])
+                except Exception as e:
+                    raise e
             self.user_buffer.clear()
 
     def getName(self, userId):

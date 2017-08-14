@@ -1,5 +1,9 @@
+import os
+import pickle
+from _signal import SIGINT
 from json import JSONDecodeError
 
+import sys
 from telegram import InlineKeyboardButton, Update, Message, InlineKeyboardMarkup, CallbackQuery, Bot, \
     ReplyKeyboardMarkup, KeyboardButton, User, Chat
 from typing import List, Callable, Tuple, Union,  Dict
@@ -12,6 +16,7 @@ from PythonApi.RPApi.Base import Api as RpApi
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters, MessageHandler
 
 import settings
+STARTUPFILE = 'startup.jhu'
 
 menus = dict()
 menus_lock = Lock()
@@ -51,7 +56,7 @@ class Menu:
             buttons.append(InlineKeyboardButton('terug naar hoofdmenu', callback_data='0'))
         return text, buttons
 
-    def _set_up(self, update: Update, callback_query: str, rp_acc: Dict) -> Tuple[str,List[InlineKeyboardButton]]:
+    def _set_up(self, update: Update, callback_query: str, rp_acc: Dict) -> Tuple[str, List[InlineKeyboardButton]]:
         if callback_query != '0':
             raise OldMenuException("verkeerde callback_querry !=0 ")
         self._get_next_buttons = self._main_menu
@@ -75,28 +80,28 @@ class Menu:
             not_in_auto = True
             if not_in_auto:
                 return 'Wat is je rol in de auto?',\
-                       [InlineKeyboardButton('bestuurder', callback_data='1'),
-                        InlineKeyboardButton('navigator', callback_data='2'),
-                        InlineKeyboardButton('bijrijders', callback_data='3')
+                       [InlineKeyboardButton('bestuurder', callback_data='m_1'),
+                        InlineKeyboardButton('navigator', callback_data='m_2'),
+                        InlineKeyboardButton('bijrijders', callback_data='m_3')
                         ]
             else:
                 bestuurder = False
                 navigator = True
                 if not bestuurder:
-                    buttons = [InlineKeyboardButton('stap uit auto', callback_data='4')]
+                    buttons = [InlineKeyboardButton('stap uit auto', callback_data='b_4')]
                 else:
                     buttons = [InlineKeyboardButton('stap uit auto en verwijder de auto uit de db')]
                 if bestuurder or navigator:
-                    buttons.append(InlineKeyboardButton('verander de taak', callback_data='5'))
+                    buttons.append(InlineKeyboardButton('verander de taak', callback_data='b_5'))
                 return 'je zit al in een auto, wat wil je down?', buttons
 
         elif callback_query == '2':
             self._get_next_buttons = self._updates_menu
             return 'waar wil je updates aan of uit voor zetten?',\
-                   [InlineKeyboardButton('check_updates', callback_data='1'),
-                    InlineKeyboardButton('hints', callback_data='h'),
-                    InlineKeyboardButton('opdrachten', callback_data='o'),
-                    InlineKeyboardButton('nieuws', callback_data='n'),
+                   [InlineKeyboardButton('check_updates', callback_data='u_1'),
+                    InlineKeyboardButton('hints', callback_data='hints'),
+                    InlineKeyboardButton('opdrachten', callback_data='opdracht'),
+                    InlineKeyboardButton('nieuws', callback_data='nieuws'),
                     InlineKeyboardButton('Alpha', callback_data='A'),
                     InlineKeyboardButton('Bravo', callback_data='B'),
                     InlineKeyboardButton('Charlie', callback_data='C'),
@@ -104,16 +109,18 @@ class Menu:
                     InlineKeyboardButton('Echo', callback_data='E'),
                     InlineKeyboardButton('Foxtrot', callback_data='F'),
                     InlineKeyboardButton('X-Ray', callback_data='X'),
-                    InlineKeyboardButton('error', callback_data='e')
+                    InlineKeyboardButton('error', callback_data='error')
                     ]
         elif callback_query == '3':
             self._get_next_buttons = self._admin_menu
             return 'Dit menu is alleen beschikbaar voor admins. ',\
-                   [# InlineKeyboardButton('stel chats in', callback_data='1'),
-                    InlineKeyboardButton('opdracht reminders voor een groepsapp uitzetten', callback_data='u'),
-                    InlineKeyboardButton('opdracht reminders voor een groepsapp aanzetten', callback_data='a'),
-                    InlineKeyboardButton('gebruiker buffer naar de site sturen', callback_data='4'),
-                    InlineKeyboardButton('gebruiker uit buffer verwijderen', callback_data='5')
+                   [# InlineKeyboardButton('stel chats in', callback_data='a_1'),
+                    InlineKeyboardButton('updates voor een groepsapp uitzetten', callback_data='uit'),
+                    InlineKeyboardButton('updates voor een groepsapp aanzetten', callback_data='aan'),
+                    InlineKeyboardButton('opdracht reminders uitzetten', callback_data='reminder_uit'),
+                    InlineKeyboardButton('opdracht reminders aanzetten', callback_data='reminder_aan'),
+                    InlineKeyboardButton('gebruiker buffer naar de site sturen', callback_data='a_4'),
+                    InlineKeyboardButton('gebruiker uit buffer verwijderen', callback_data='a_5')
                     ]
         elif callback_query == '4':
             self._get_next_buttons = self._bug_menu
@@ -123,6 +130,9 @@ class Menu:
                     InlineKeyboardButton('website', callback_data='site'),
                     InlineKeyboardButton('anders', callback_data='anders'),
                     ]
+        else:
+            return 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
+                   'main_menu, ' + str(callback_query), []
 
     def _auto_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         # todo implement this
@@ -130,17 +140,20 @@ class Menu:
 
     def _updates_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         message = ''
-        if callback_query == '1':
+        if callback_query == 'u_1':
             for u in Updates.get_updates().check_updates(update.effective_chat.id):
                 message += u + '\n'
             return message, []
-        else:
+        elif callback_query in ['a', 'u']:
             self._get_next_buttons = self._updates_aan_uit_menu
             message = 'updates voor ' + str(self.path[-1]) + ' aan of uit zetten.'
             return message, [
                 InlineKeyboardButton('aan', callback_data='a'),
                 InlineKeyboardButton('uit', callback_data='u')
             ]
+        else:
+            return 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
+                   'updates_menu, ' + str(callback_query), []
 
     def _updates_aan_uit_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         updates = Updates.get_updates()
@@ -164,14 +177,17 @@ class Menu:
             updates.set_updates(update.effective_chat.id, Updates.FOXTROT, zet_aan)
         elif self.path[-2] == 'X':
             updates.set_updates(update.effective_chat.id, Updates.XRAY, zet_aan)
-        elif self.path[-2] == 'h':
+        elif self.path[-2] == 'hints':
             updates.set_updates(update.effective_chat.id, Updates.HINTS, zet_aan)
-        elif self.path[-2] == 'n':
+        elif self.path[-2] == 'nieuws':
             updates.set_updates(update.effective_chat.id, Updates.NIEUWS, zet_aan)
-        elif self.path[-2] == 'o':
+        elif self.path[-2] == 'opdracht':
             updates.set_updates(update.effective_chat.id, Updates.OPDRACHTEN, zet_aan)
-        elif self.path[-2] == 'e':
+        elif self.path[-2] == 'error':
             updates.set_updates(update.effective_chat.id, Updates.ERROR, zet_aan)
+        else:
+            message = 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
+                   '_updates_aan_uit_menu, ' + str(callback_query)
         return message, []
 
     def _admin_menu_updates_group_2(self, update: Update, callback_query: str, rp_acc) -> Tuple[
@@ -179,7 +195,7 @@ class Menu:
         updates = Updates.get_updates()
         chat_id = self.path[-2]
         update_type = self.path[-1]
-        zet_aan = self.path[-3] == 'a'
+        zet_aan = self.path[-3] == 'aan'
 
         if zet_aan:
             message = 'updates voor ' + str(update_type) + ' zijn aangezet.'
@@ -199,36 +215,43 @@ class Menu:
             updates.set_updates(chat_id, Updates.FOXTROT, zet_aan)
         elif update_type == 'X':
             updates.set_updates(chat_id, Updates.XRAY, zet_aan)
-        elif update_type == 'h':
+        elif update_type == 'hints':
             updates.set_updates(chat_id, Updates.HINTS, zet_aan)
-        elif update_type == 'n':
+        elif update_type == 'nieuws':
             updates.set_updates(chat_id, Updates.NIEUWS, zet_aan)
-        elif update_type == 'o':
+        elif update_type == 'opdracht':
             updates.set_updates(chat_id, Updates.OPDRACHTEN, zet_aan)
-        elif update_type == 'e':
+        elif update_type == 'error':
             updates.set_updates(chat_id, Updates.ERROR, zet_aan)
+        else:
+            message = 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
+                   '_admin_menu_updates_group_2, ' + str(callback_query)
         return message, []
 
     def _admin_menu_updates_group_1(self, update: Update, callback_query: str, rp_acc) -> Tuple[str, List[InlineKeyboardButton]]:
         self._get_next_buttons = self._admin_menu_updates_group_2
-        return 'Waarvoor moeten updates aan of uitgezet worden?', [
-                    InlineKeyboardButton('hints', callback_data='h'),
-                    InlineKeyboardButton('opdrachten', callback_data='o'),
-                    InlineKeyboardButton('nieuws', callback_data='n'),
-                    InlineKeyboardButton('Alpha', callback_data='A'),
-                    InlineKeyboardButton('Bravo', callback_data='B'),
-                    InlineKeyboardButton('Charlie', callback_data='C'),
-                    InlineKeyboardButton('Delta', callback_data='D'),
-                    InlineKeyboardButton('Echo', callback_data='E'),
-                    InlineKeyboardButton('Foxtrot', callback_data='F'),
-                    InlineKeyboardButton('X-Ray', callback_data='X'),
-                    InlineKeyboardButton('error', callback_data='e')
+        if callback_query in ('u', 'a'):
+            return 'Waarvoor moeten updates aan of uitgezet worden?', [
+                        InlineKeyboardButton('hints', callback_data='hints'),
+                        InlineKeyboardButton('opdrachten', callback_data='opdracht'),
+                        InlineKeyboardButton('nieuws', callback_data='nieuws'),
+                        InlineKeyboardButton('Alpha', callback_data='A'),
+                        InlineKeyboardButton('Bravo', callback_data='B'),
+                        InlineKeyboardButton('Charlie', callback_data='C'),
+                        InlineKeyboardButton('Delta', callback_data='D'),
+                        InlineKeyboardButton('Echo', callback_data='E'),
+                        InlineKeyboardButton('Foxtrot', callback_data='F'),
+                        InlineKeyboardButton('X-Ray', callback_data='X'),
+                        InlineKeyboardButton('error', callback_data='error')
                                                                    ]
+        else:
+            return 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
+                   '_admin_menu_updates_group_2, ' + str(callback_query), []
 
     def _admin_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         if callback_query == '1':
             return 'niet geimplenteerd', []
-        elif callback_query in ['u', 'a']:
+        elif callback_query in ['uit', 'aaan']:
             chats = IdsObserver()
             buttons = []
             self._get_next_buttons = self._admin_menu_updates_group_1
@@ -247,6 +270,9 @@ class Menu:
                     buttons.append(InlineKeyboardButton(users.getName(user_id), callback_data=str(user_id)))
             self._get_next_buttons = self._admin_menu_remove_user
             return 'welke gebruiker moet worden verwijder uit de buffer?', buttons
+        else:
+            return 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
+                   'admin_menu, ' + str(callback_query), []
 
     def _admin_menu_remove_user(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         users = IdsObserver()
@@ -343,11 +369,46 @@ def users_handler(bot, update):
         users.add_group_chat(chat.type, chat.id, chat.title)
 
 
+def stop(updater: Updater):
+    def handler(bot, update):
+        bot.send_message(update.effective_chat.id, "bot gaat stoppen.")
+        try:
+            updates: Updates = Updates.get_updates()
+            updates.to_all('de bot gaat afsluiten')
+            updates.exit()
+            updates.save()
+            with open(STARTUPFILE, 'wb') as file:
+                pickle.dump({'command': 'stop'}, file)
+            os.execl(sys.executable, sys.executable, *sys.argv)
+        except Exception as e:
+            print(e)
+            raise e
+        # updater.is_idle = False
+    return handler
+
+
+def restart(bot, update):
+    bot.send_message(update.effective_chat.id, "bot gaat stoppen.")
+    try:
+        updates: Updates = Updates.get_updates()
+        updates.to_all('de bot gaat herstarten')
+        updates.exit()
+        updates.save()
+        with open(STARTUPFILE, 'wb') as file:
+            pickle.dump({'command': 'restart'}, file)
+        os.execl(sys.executable, sys.executable, *sys.argv)
+    except Exception as e:
+        print(e)
+        raise e
+
 def create_updater():
     updater = Updater(token=settings.Settings().bot_key)
     dp = updater.dispatcher
     dp.add_handler(CommandHandler('start', start))
+    dp.add_handler(CommandHandler('restart', restart))
+    dp.add_handler(CommandHandler('stop', stop(updater)))
     dp.add_handler(CallbackQueryHandler(handle_callback))
     dp.add_handler(MessageHandler(Filters.location, location_handler))
     dp.add_handler(MessageHandler(Filters.all, users_handler))
+
     return updater

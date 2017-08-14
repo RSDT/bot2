@@ -176,6 +176,12 @@ def void_no_crash():
 
 class MyUpdates:
     def __init__(self):
+        self.t = None
+
+
+
+
+
         self._reminders_lock = threading.Lock()
         self.mail = imaplib.IMAP4_SSL('imap.gmail.com')
         self.seenHunts = dict()
@@ -645,6 +651,17 @@ class MyUpdates:
             m = self.bot.sendMessage(chat_id, message, *args, **kwargs)
             if botan_id is not None:
                 self.botan.track(m, botan_id)
+
+    def add_stopable_thread(self, t):
+        if self.t is None:
+            self.t = t
+
+    def exit(self):
+        if self.t is not None:
+            self.t.stop()
+        self.to_all('de bot gaat afsluiten.')
+        self.error(Exception("de bot gaat stoppen"), "de bot gaat stoppen")
+
 
 
 class SingleUpdater:
