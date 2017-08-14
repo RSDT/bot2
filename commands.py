@@ -2,6 +2,7 @@ import telegram
 from telegram.ext import Updater, MessageHandler, Filters
 import settings
 import Updates
+import wrappers
 from wrappers import void_no_crash, authenticate
 from CommandHandlerWithHelp import CommandHandlerWithHelp
 import authenticator
@@ -75,7 +76,7 @@ class State:
             yield key, self._data[key]
 
 
-def error_handler(bot, update, error):
+def error_handler(bot: telegram.Bot, update: telegram.Update, error):
     bot.sendMessage(update.message.chat_id, "er is in deze chat een error "
                                             "opgetreden:\n" + str(error))
     Updates.get_updates().error(error, "Updater")
@@ -115,11 +116,12 @@ def create_updater() -> Updater:
     dp.add_handler(MessageHandler([Filters.status_update], on_new_user))
     for command_handler_with_help in chwh:
         dp.add_handler(command_handler_with_help)
+    wrappers.setUpdater(updater)
     return updater
 
 @void_no_crash()
 @authenticate()
-def set_phpsessid(bot, update):
+def set_phpsessid(bot: telegram.Bot, update: telegram.Update):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
     try:
@@ -127,11 +129,11 @@ def set_phpsessid(bot, update):
                       phpsessid_done)
         state['command'] = update.message.text
         state['from'] = update.message.from_user.name
-        message = 'stap 1: login op jotihunt.net\n stap2: zoek uit hoe je ' \
-                  'cookies van jothunt.net uitleest in je browser. \n stap ' \
-                  '3: ga op zook naar de cookie met de naam PHPSESSID.\n  ' \
-                  'stap 4: plak de waarde hier om de cookie te  verversen ' \
-                  'van de bot.\n of /cancel om te stoppen'
+        message = 'stap 1: login op jotihunt.net\n ' \
+                  'stap2: zoek uit hoe je cookies van jothunt.net uitleest in je browser. \n ' \
+                  'stap 3: ga op zook naar de cookie met de naam PHPSESSID.\n  ' \
+                  'stap 4: plak de waarde hier om de cookie te  verversen van de bot.\n' \
+                  ' of /cancel om te stoppen'
         bot.sendMessage(chat_id, message,
                         reply_to_message_id=update.message.message_id)
     # TODO add a keyboard
@@ -147,7 +149,7 @@ def set_phpsessid(bot, update):
 
 
 @void_no_crash()
-def on_new_user(bot, update):
+def on_new_user(bot: telegram.Bot, update: telegram.Update):
     if update.message.new_chat_member:
         if update.message.new_chat_member.username:
             username = '@' + update.message.new_chat_member.username
@@ -173,7 +175,7 @@ def on_new_user(bot, update):
 #                                                                             #
 ###############################################################################
 @void_no_crash()
-def set_url(bot, update):
+def set_url(bot: telegram.Bot, update: telegram.Update):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
     try:
@@ -199,7 +201,7 @@ def set_url(bot, update):
 
 
 @void_no_crash()
-def bug(bot, update):
+def bug(bot: telegram.Bot, update: telegram.Update):
     """
 
                 :param bot:
@@ -230,7 +232,7 @@ def bug(bot, update):
 
 @void_no_crash()
 @authenticate()
-def test(bot, update):
+def test(bot: telegram.Bot, update: telegram.Update):
     bot.sendMessage(update.message.chat_id, 'de bot is online')
     if update.message.chat_id > 0:
         url = Updates.get_updates().botan.shorten('http://google.com',
@@ -243,7 +245,7 @@ def test(bot, update):
 
 @void_no_crash()
 @authenticate()
-def check_updates(bot, update):
+def check_updates(bot: telegram.Bot, update: telegram.Update):
     message = 'updates staan aan voor:\n'
     for u in Updates.get_updates().check_updates(update.message.chat_id):
         message += u + '\n'
@@ -267,7 +269,7 @@ Of je stuurt hier een berichtje en vraagt of de homebase je wil verifieren.
 
 
 @void_no_crash()
-def start(bot, update):
+def start(bot: telegram.Bot, update: telegram.Update):
     if update.message.chat_id > 0:
         keyboard = telegram.ReplyKeyboardMarkup(DEFAULT_KEYBOARD,
                                                 one_time_keyboard=False)
@@ -282,7 +284,7 @@ def start(bot, update):
 
 
 @void_no_crash()
-def help_command(bot, update):
+def help_command(bot: telegram.Bot, update: telegram.Update):
     message = start_message + "\n\n"
     for commando in CommandHandlerWithHelp.helps:
         message += '/' + commando + ' - ' + CommandHandlerWithHelp.helps[
@@ -293,7 +295,7 @@ def help_command(bot, update):
 
 @void_no_crash()
 @authenticate()
-def crash(bot, update):
+def crash(bot: telegram.Bot, update: telegram.Update):
     bot.sendMessage(update.message.chat_id, 'we gaan de bot proberen te '
                                             'crashen')
     Updates.get_updates().botan.track(update.message, '/crash')
@@ -302,7 +304,7 @@ def crash(bot, update):
 
 @void_no_crash()
 @authenticate()
-def cancel(bot, update):
+def cancel(bot: telegram.Bot, update: telegram.Update):
     """
 
     :param bot:
@@ -341,7 +343,7 @@ def cancel(bot, update):
 
 @void_no_crash()
 @authenticate()
-def updates(bot, update):
+def updates(bot: telegram.Bot, update: telegram.Update):
     chat_id = update.message.chat_id
     user_id = update.message.from_user.id
     try:
@@ -369,7 +371,7 @@ def updates(bot, update):
 
 @void_no_crash()
 @authenticate()
-def sc_groep(bot, update):
+def sc_groep(bot: telegram.Bot, update: telegram.Update):
     """
 
     :param bot:
@@ -397,7 +399,7 @@ def sc_groep(bot, update):
 ###############################################################################
 
 @void_no_crash()
-def conversation(bot, update):
+def conversation(bot: telegram.Bot, update: telegram.Update):
     """
 
     :rtype: None
@@ -420,7 +422,7 @@ def conversation(bot, update):
 
 
 @void_no_crash()
-def set_url_conversation(bot, update, state):
+def set_url_conversation(bot: telegram.Bot, update: telegram.Update, state):
     s = state.get_state()
     keyboard = None
     message = 'unexpected input!!'
@@ -454,7 +456,7 @@ def set_url_conversation(bot, update, state):
 
 
 @void_no_crash()
-def updates_conversation(bot, update, state):
+def updates_conversation(bot: telegram.Bot, update: telegram.Update, state):
     s = state.get_state()
     message = 'unexpected input!!'
     keyboard = None
@@ -535,7 +537,7 @@ def updates_conversation(bot, update, state):
 
 
 @void_no_crash()
-def phpsessid_conversation(bot, update, state):
+def phpsessid_conversation(bot: telegram.Bot, update: telegram.Update, state):
     s = state.get_state()
     if s == 0:
         state['cookie'] = update.message.text
@@ -547,7 +549,7 @@ def phpsessid_conversation(bot, update, state):
 
 
 @void_no_crash()
-def bug_conversation(bot, update, state):
+def bug_conversation(bot: telegram.Bot, update: telegram.Update, state):
     s = state.get_state()
     if update.message.chat_id > 0:
         keyboard = telegram.ReplyKeyboardMarkup(DEFAULT_KEYBOARD)

@@ -362,7 +362,3 @@ class Response:
 
     def __iter__(self):
         yield from self.data
-
-
-
-

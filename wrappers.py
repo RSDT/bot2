@@ -13,6 +13,7 @@ def void_no_crash():
                 func(*args, **kwargs)
             except Exception as e:
                 type_, value_, traceback_ = sys.exc_info()
+                print(traceback_)
                 print(str(e))
                 updates = Updates.get_updates()
                 if func is not None:
@@ -25,11 +26,18 @@ def void_no_crash():
         return call
 
     return decorate
+updater = None
+
+
+def setUpdater(updater1):
+    global updater
+    updater = updater1
 
 
 def authenticate():
     def decorate(func):
         def call(bot, update):
+            global updater
 
             chat_id = update.message.chat_id
             user_id = update.message.from_user.id

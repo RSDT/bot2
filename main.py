@@ -30,7 +30,7 @@ class StoppableThread(threading.Thread):
 
     @wrappers.void_no_crash()
     def run(self):
-        logging.debug('5min uodate thread started')
+        logging.debug('5min update thread started')
         updater = Updates.get_updates()
         while not self.stopped():
             try:
