@@ -366,12 +366,13 @@ class MyUpdates:
                        threading.Thread(target=self._nieuws.update),
                        threading.Thread(target=self._opdrachten.update),
                        threading.Thread(target=self._hints.update),
-                       threading.Thread(target=self.remind)]
+                       threading.Thread(target=self.remind),
+                       threading.Thread(target=self.update_foto_opdracht),
+                       threading.Thread(target=self.update_mail),
+                       threading.Thread(target=self.update_hunts)
+                       ]
             for t in threads:
                 t.start()
-            self.update_foto_opdracht()
-            self.update_mail()
-            self.update_hunts()
             self._last_update = time.time()
             start = time.time()
             while threads:
