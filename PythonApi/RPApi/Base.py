@@ -293,6 +293,8 @@ class Api:
             self._send_request(root, data=data)
         except JSONDecodeError as e:
             logging.error(e)
+        except NoDataError as e:
+            logging.error(e)
         except Exception as e:
             raise e
 
