@@ -13,7 +13,7 @@ def parse_time(timestamp) -> int:
     if isinstance(timestamp, int):
         return timestamp
     elif isinstance(timestamp, str):
-        return time.mktime(datetime.datetime.strptime(timestamp,"%Y-%m-%d %H:%M:%S"))
+        return time.mktime(datetime.datetime.strptime(timestamp,"%Y-%m-%d %H:%M:%S").timetuple())
     else:
         return timestamp
 
