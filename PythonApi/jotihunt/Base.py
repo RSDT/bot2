@@ -19,9 +19,9 @@ def parse_time(timestamp) -> int:
 
 class Base:
     def __init__(self, json):
-        self.ID = json['ID']
-        self.titel = json['titel']
-        self.inhoud = json['inhoud']
+        self.ID = str(json['ID'])
+        self.titel = str(json['titel'])
+        self.inhoud = str(json['inhoud'])
         self.datum = parse_time(json['datum'])
 
     def __str__(self):
