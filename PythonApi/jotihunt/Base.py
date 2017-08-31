@@ -1,4 +1,6 @@
 from PythonApi.Base.Exceptions import NoSuchTypeException, RetrieveException
+import time
+import datetime
 
 __all__ = ['SCORELIJST', 'OPDRACHT', 'OPDRACHTEN',
            'HINT', 'HINTS', 'NIEUWS',
@@ -7,13 +9,20 @@ __all__ = ['SCORELIJST', 'OPDRACHT', 'OPDRACHTEN',
 OPDRACHT, OPDRACHTEN, HINT, HINTS, NIEUWS, NIEUWSLIJST, VOSSEN, SCORELIJST = \
     range(8)
 
+def parse_time(timestamp) -> int:
+    if isinstance(timestamp, int):
+        return timestamp
+    elif isinstance(timestamp, str):
+        return time.mktime(datetime.datetime.strptime(timestamp,"%Y-%m-%d %H:%M:%S"))
+    else:
+        return timestamp
 
 class Base:
     def __init__(self, json):
         self.ID = json['ID']
         self.titel = json['titel']
         self.inhoud = json['inhoud']
-        self.datum = json['datum']
+        self.datum = parse_time(json['datum'])
 
     def __str__(self):
         return str(self.titel)
@@ -23,7 +32,7 @@ class Opdracht(Base):
     def __init__(self, json):
         super(Opdracht, self).__init__(json)
         self.maxpunten = json['maxpunten']
-        self.eindtijd = json['eindtijd']
+        self.eindtijd =  parse_time(json['eindtijd'])
 
 
 class Hint(Base):
@@ -83,12 +92,12 @@ class ScoutingGroep:
 
 
 class Response:
-    def __init__(self, json, kind):
+    def __init__(self, json: dict, kind):
         self.type = kind
         if 'error' in json:
             raise RetrieveException(json['error'])
         self.version = json['version']
-        self.last_update = json['last_update']
+        self.last_update = parse_time(json.get('last_update', time.time())
         self.data = None
         if self.type == SCORELIJST:
             self.data = ScoreLijst(json["data"])
