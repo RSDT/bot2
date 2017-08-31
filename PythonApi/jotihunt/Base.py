@@ -97,7 +97,7 @@ class Response:
         if 'error' in json:
             raise RetrieveException(json['error'])
         self.version = json['version']
-        self.last_update = parse_time(json.get('last_update', time.time())
+        self.last_update = parse_time(json.get('last_update', time.time()))
         self.data = None
         if self.type == SCORELIJST:
             self.data = ScoreLijst(json["data"])
