@@ -106,21 +106,21 @@ class Response:
         elif self.type == OPDRACHTEN:
             self.data = []
             from PythonApi.jotihunt.Retrievers import get_opdracht
-            for opdracht in json["data"]:
+            for opdracht in json.get("data",  []):
                 self.data.append(get_opdracht(opdracht["ID"]))
         elif self.type == HINT:
             self.data = Hint(json["data"][0])
         elif self.type == HINTS:
             self.data = []
             from PythonApi.jotihunt.Retrievers import get_hint
-            for hint in json["data"]:
+            for hint in json.get("data", []):
                 self.data.append(get_hint(hint["ID"]))
         elif self.type == NIEUWS:
             self.data = Nieuws(json["data"][0])
         elif self.type == NIEUWSLIJST:
             self.data = []
             from PythonApi.jotihunt.Retrievers import get_nieuws
-            for nieuws in json["data"]:
+            for nieuws in json.get("data", []):
                 self.data.append(get_nieuws(nieuws["ID"]))
         elif self.type == VOSSEN:
             self.data = dict()
