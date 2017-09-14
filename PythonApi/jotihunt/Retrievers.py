@@ -14,7 +14,7 @@ except:
     DEBUG = False
 
 
-_base_url = "http://www.jotihunt.net/api/1.0/"
+_base_url = "http://jotihunt.net/api/1.0/"
 test_opdrachten = {
     'id0': {
         "ID": 'id0',
