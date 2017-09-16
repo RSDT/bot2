@@ -226,7 +226,7 @@ class Menu:
             updates.set_updates(chat_id, Updates.ERROR, zet_aan)
         else:
             message = 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
-                   '_admin_menu_updates_group_2, ' + str(callback_query)
+                   '_admin_menu_updates_group_2, ' + str(callback_query) + ', ' + str(self.path)
         return message, []
 
     def _admin_menu_updates_group_1(self, update: Update, callback_query: str, rp_acc) -> Tuple[str, List[InlineKeyboardButton]]:
