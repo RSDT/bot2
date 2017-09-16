@@ -231,7 +231,7 @@ class Menu:
 
     def _admin_menu_updates_group_1(self, update: Update, callback_query: str, rp_acc) -> Tuple[str, List[InlineKeyboardButton]]:
         self._get_next_buttons = self._admin_menu_updates_group_2
-        if callback_query in ('u', 'a'):
+        if callback_query in ('uit', 'aan'):
             return 'Waarvoor moeten updates aan of uitgezet worden?', [
                         InlineKeyboardButton('hints', callback_data='hints'),
                         InlineKeyboardButton('opdrachten', callback_data='opdracht'),
