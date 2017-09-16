@@ -247,7 +247,7 @@ class Menu:
                                                                    ]
         else:
             return 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
-                   '_admin_menu_updates_group_1, ' + str(callback_query), []
+                   '_admin_menu_updates_group_1, ' + str(callback_query) + ', ' + str(self.path), []
 
     def _admin_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         if callback_query == 'a_1':
