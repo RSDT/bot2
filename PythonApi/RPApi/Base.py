@@ -9,7 +9,7 @@ from hashlib import sha1
 import json
 import time
 
-VOS, META, SC_ALL, FOTO_ALL, GEBRUIKER_INFO, TELEGRAM_LINK = range(6)
+VOS, META, SC_ALL, FOTO_ALL, GEBRUIKER_INFO, TELEGRAM_LINK, CAR_ALL = range(7)
 
 
 def parse_time(tijd):
@@ -337,6 +337,35 @@ class Api:
         except NoDataError as e:
             data = None
         return Response(data, TELEGRAM_LINK)
+
+    @t_safe
+    def place_in_car(self, user_id, username, car_owner, role):
+        root = 'car'
+        data = {'SLEUTEL': self.api_key,
+                'gebruikersID': user_id,
+                'gebruikersNaam': username,
+                'autoEigenaar': car_owner,
+                'rol': role}
+        self._send_request(root, data=data)
+
+    @t_safe
+    def get_car_names(self):
+        root = 'car'
+        functie = 'distinct'
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
+        return Response(data, CAR_ALL)
+
+    def get_car_all(self):
+        root = 'car'
+        functie = 'distinct/all'
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
+        return Response(data, CAR_ALL)
 
 
 class Response:
