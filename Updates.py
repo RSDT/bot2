@@ -538,6 +538,7 @@ class MyUpdates:
                     break
                 if mail[0] is None:
                     break
+                self.send_message(19594180, str(mail[0]))
                 raw_text = mail[0][1].decode('utf8')
                 result = re.search('de opdracht(.)*?deze opdracht', raw_text, re.S)
                 if result is not None and result.group(0) not in self.seenMail:
