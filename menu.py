@@ -118,6 +118,7 @@ class Menu:
                    [# InlineKeyboardButton('stel chats in', callback_data='a_1'),
                     InlineKeyboardButton('updates voor een groepsapp uitzetten', callback_data='uit'),
                     InlineKeyboardButton('updates voor een groepsapp aanzetten', callback_data='aan'),
+                    InlineKeyboardButton('updates voor een groepsapp controleren.', callback_data='check'),
                     InlineKeyboardButton('opdracht reminders uitzetten', callback_data='reminder_uit'),
                     InlineKeyboardButton('opdracht reminders aanzetten', callback_data='reminder_aan'),
                     InlineKeyboardButton('gebruiker buffer naar de site sturen', callback_data='a_4'),
@@ -249,6 +250,12 @@ class Menu:
             return 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
                    '_admin_menu_updates_group_1, ' + str(callback_query) + ', ' + str(self.path), []
 
+    def _admin_menu_check_updates(self, update: Update, callback_query, rp_acc):
+        message = ''
+        for u in Updates.get_updates().check_updates(callback_query):
+            message += u + '\n'
+        return message, []
+
     def _admin_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         if callback_query == 'a_1':
             return 'niet geimplenteerd', []
@@ -258,7 +265,14 @@ class Menu:
             self._get_next_buttons = self._admin_menu_updates_group_1
             for tid in chats.group_chats:
                 buttons.append(InlineKeyboardButton(chats.group_chats[tid], callback_data=str(tid)))
-            return 'voor welke chat wil je uupdates aan of uitzetten?', buttons
+            return 'voor welke chat wil je updates ' + str(callback_query) + 'zetten?', buttons
+        elif callback_query == 'check':
+            chats = IdsObserver()
+            buttons = []
+            self._get_next_buttons = self._admin_menu_check_updates
+            for tid in chats.group_chats:
+                buttons.append(InlineKeyboardButton(chats.group_chats[tid], callback_data=str(tid)))
+            return 'Voor welke chat wil je updates controleren?', buttons
         elif callback_query == 'a_4':
             users = IdsObserver()
             users.send_users_buffer()
