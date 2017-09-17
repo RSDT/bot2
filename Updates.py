@@ -520,40 +520,43 @@ class MyUpdates:
 
     @void_no_crash()
     def update_mail(self, new_update_item=None):
-        i = 1
-        found = []
-        gmail = imaplib.IMAP4_SSL('imap.gmail.com')
-        gmail.login(settings.Settings().rpmail_username,
-                        settings.Settings().rpmail_pass)
-        gmail.select('INBOX')
-        gmail.search(None, 'ALL')
-        while True:
-            j = bytes(str(i), 'utf8')
-            try:
-                status, mail = gmail.fetch(j, '(RFC822)')
-            except Exception as e:
-                type_, value_, traceback_ = sys.exc_info()
-                get_updates().error(e, 'update_mail', (type_, value_, traceback_))
-                break
-            if mail[0] is None:
-                break
-            raw_text = mail[0][1].decode('utf8')
-            result = re.search('de opdracht(.)*?deze opdracht', raw_text, re.S)
-            if result is not None and result.group(0) not in self.seenMail:
-                found.append(result.group(0))
-                self.seenMail.add(result.group(0))
-            result = re.search(
-                'Jullie tegenhunt(.)*?mag uiteraard wel',
-                raw_text, re.S)
-            if result is not None and result.group(0) not in self.seenMail:
-                found.append(result.group(0))
-                self.seenMail.add(result.group(0))
-            i += 1
-        for update in found:
-            for chat_id in self._nieuws:
-                self.send_message(chat_id,
-                                     'Er is een mail van de organisatie:\n'
-                                     + str(update))
+        try:
+            i = 1
+            found = []
+            gmail = imaplib.IMAP4_SSL('imap.gmail.com')
+            gmail.login(settings.Settings().rpmail_username,
+                            settings.Settings().rpmail_pass)
+            gmail.select('INBOX')
+            gmail.search(None, 'ALL')
+            while True:
+                j = bytes(str(i), 'utf8')
+                try:
+                    status, mail = gmail.fetch(j, '(RFC822)')
+                except Exception as e:
+                    type_, value_, traceback_ = sys.exc_info()
+                    get_updates().error(e, 'update_mail', (type_, value_, traceback_))
+                    break
+                if mail[0] is None:
+                    break
+                raw_text = mail[0][1].decode('utf8')
+                result = re.search('de opdracht(.)*?deze opdracht', raw_text, re.S)
+                if result is not None and result.group(0) not in self.seenMail:
+                    found.append(result.group(0))
+                    self.seenMail.add(result.group(0))
+                result = re.search(
+                    'Jullie tegenhunt(.)*?mag uiteraard wel',
+                    raw_text, re.S)
+                if result is not None and result.group(0) not in self.seenMail:
+                    found.append(result.group(0))
+                    self.seenMail.add(result.group(0))
+                i += 1
+            for update in found:
+                for chat_id in self._nieuws:
+                    self.send_message(chat_id,
+                                         'Er is een mail van de organisatie:\n'
+                                         + str(update))
+        except Exception as e:
+            self.error(e, 'update_mail')
 
     @void_no_crash()
     def update_hunts(self, new_update_item=None):
