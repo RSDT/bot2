@@ -377,15 +377,16 @@ class MyUpdates:
             start = time.time()
             while threads:
                 if time.time() - start > 300:
-                    self.send_message(-158130982, 'timeout error opgetrden '
+                    e = TimeoutError('meer dan 5 minuten over een update '
+                                       'gedaan.', len(threads))
+                    self.error(e, 'timeout error opgetreden '
                                                   'tijdens updaten. updaten '
                                                   'duurde meer dan 300 '
                                                   'seconden. waarschijnlijk '
                                                   'is het een goed idee om '
                                                   'de bot opnieuw op te '
                                                   'starten.')
-                    raise TimeoutError('meer dan 5 minuten over een update '
-                                       'gedaan.', len(threads))
+                    raise e
                 t = threads.pop(0)
                 t.join(1)
                 if t.isAlive():
