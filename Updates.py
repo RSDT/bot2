@@ -228,7 +228,7 @@ class MyUpdates:
                       ' extra info: {extra}\n ' \
                       'opmerking/adres: {opmerking}\n' \
                       'tijd: {tijd}\n' \
-                      'link: http://jotihunt2016.area348.nl/map.php?gebied=' \
+                      'link: http://jotihunt2017.area348.nl/map.php?gebied=' \
                       '{team_upper}'
         message_vos_status = 'Er is een nieuwe status voor {team}'
         self.botan_id_vos = 'newLoc_{team}_{soort}'
@@ -303,6 +303,7 @@ class MyUpdates:
                     self.reminders[opdracht_id] = Reminder(opdracht, chat_ids)
                 finally:
                     self._reminders_lock.release()
+
         opdracht_updater = SingleUpdater(get_last_opdracht,
                                          get_jotihunt_kwargs, jotihunt_message,
                                          botan_id=self.botan_id_jotihunt,
@@ -356,20 +357,20 @@ class MyUpdates:
     def update(self):
         if self._last_update is None or abs(time.time() -
                                                     self._last_update) > 60:
-            threads = [threading.Thread(target=self._A.update),
-                       threading.Thread(target=self._B.update),
-                       threading.Thread(target=self._C.update),
-                       threading.Thread(target=self._D.update),
-                       threading.Thread(target=self._E.update),
-                       threading.Thread(target=self._F.update),
-                       threading.Thread(target=self._X.update),
-                       threading.Thread(target=self._nieuws.update),
-                       threading.Thread(target=self._opdrachten.update),
-                       threading.Thread(target=self._hints.update),
-                       threading.Thread(target=self.remind),
-                       threading.Thread(target=self.update_foto_opdracht),
-                       threading.Thread(target=self.update_mail),
-                       threading.Thread(target=self.update_hunts)
+            threads = [threading.Thread(target=self._A.update, name='a'),
+                       threading.Thread(target=self._B.update, name='b'),
+                       threading.Thread(target=self._C.update, name='c'),
+                       threading.Thread(target=self._D.update, name='d'),
+                       threading.Thread(target=self._E.update, name='e'),
+                       threading.Thread(target=self._F.update, name='f'),
+                       threading.Thread(target=self._X.update, name='x'),
+                       threading.Thread(target=self._nieuws.update, name='nieuws'),
+                       threading.Thread(target=self._opdrachten.update, name='opdracht'),
+                       threading.Thread(target=self._hints.update, name='hints'),
+                       threading.Thread(target=self.remind, name='remind'),
+                       threading.Thread(target=self.update_foto_opdracht, name='foto'),
+                       threading.Thread(target=self.update_mail, name='mail'),
+                       threading.Thread(target=self.update_hunts, name='hunts')
                        ]
             for t in threads:
                 t.start()
@@ -377,8 +378,10 @@ class MyUpdates:
             start = time.time()
             while threads:
                 if time.time() - start > 300:
-                    e = TimeoutError('meer dan 5 minuten over een update '
-                                       'gedaan.', len(threads))
+                    mess = 'meer dan 5 minuten over een update gedaan. '
+                    for t in threads:
+                        mess += '\n ' + str(t.getName())
+                    e = TimeoutError(mess, len(threads))
                     self.error(e, 'timeout error opgetreden '
                                                   'tijdens updaten. updaten '
                                                   'duurde meer dan 300 '
@@ -387,7 +390,7 @@ class MyUpdates:
                                                   'de bot opnieuw op te '
                                                   'starten.')
                     raise e
-                t = threads.pop(0)
+                t: threading.Thread = threads.pop(0)
                 t.join(1)
                 if t.isAlive():
                     threads.append(t)
