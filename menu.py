@@ -441,6 +441,11 @@ def stop(updater: Updater):
     return handler
 
 
+def save(bot, update):
+    updates: Updates = Updates.get_updates()
+    updates.save()
+    updates.send_message(update.effective_chat.id, 'huidige staat opgeslagen')
+
 def restart(bot, update):
     api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
     response = api.get_telegram_link(update.effective_user.id)
@@ -473,6 +478,7 @@ def create_updater():
     dp = updater.dispatcher
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(CommandHandler('restart', restart))
+    dp.add_handler(CommandHandler('save', save))
     dp.add_handler(CommandHandler('stop', stop(updater)))
     dp.add_handler(CallbackQueryHandler(handle_callback))
     dp.add_handler(MessageHandler(Filters.location, location_handler))
