@@ -1,3 +1,4 @@
+import logging
 import os
 import pickle
 from json import JSONDecodeError
@@ -524,6 +525,16 @@ def restart(bot, update):
         raise e
 
 
+def error_callback(bot, update, error):
+    updates = Updates.get_updates()
+    type_, value_, traceback_ = sys.exc_info()
+    print(traceback_)
+    print(str(error))
+    updates = Updates.get_updates()
+    logging.error(str(error) + '\n' + 'error_callback')
+    updates.error(error, 'error_callback',
+                  (type_, value_, traceback_))
+
 def create_updater():
     updater = Updater(token=settings.Settings().bot_key)
     dp = updater.dispatcher
@@ -534,5 +545,5 @@ def create_updater():
     dp.add_handler(CallbackQueryHandler(handle_callback))
     dp.add_handler(MessageHandler(Filters.location, location_handler))
     dp.add_handler(MessageHandler(Filters.all, users_handler))
-
+    dp.add_error_handler(error_callback)
     return updater
