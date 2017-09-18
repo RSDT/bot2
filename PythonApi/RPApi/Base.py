@@ -338,7 +338,7 @@ class Api:
             data = None
         return Response(data, TELEGRAM_LINK)
 
-    @t_safe
+    @t_safe()
     def place_in_car(self, user_id, username, car_owner, role):
         root = 'car'
         data = {'SLEUTEL': self.api_key,
@@ -348,7 +348,7 @@ class Api:
                 'rol': role}
         self._send_request(root, data=data)
 
-    @t_safe
+    @t_safe()
     def get_car_names(self):
         root = 'car'
         functie = 'distinct'
@@ -358,6 +358,7 @@ class Api:
             data = []
         return Response(data, CAR_ALL)
 
+    @t_safe()
     def get_car_all(self):
         root = 'car'
         functie = 'distinct/all'
