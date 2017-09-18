@@ -66,13 +66,13 @@ class Menu:
                    [InlineKeyboardButton('auto', callback_data='1'),
                     InlineKeyboardButton('updates', callback_data='2'),
                     InlineKeyboardButton('admin controls', callback_data='3'),
-                    InlineKeyboardButton('report a bug', callback_data='4'),
+                    #InlineKeyboardButton('report a bug', callback_data='4'),
                     ]
         else:
             return 'Welkom Bij de bot. Wat wil je doen?',\
                    [InlineKeyboardButton('auto', callback_data='1'),
                     InlineKeyboardButton('updates', callback_data='2'),
-                    InlineKeyboardButton('report a bug', callback_data='4'),
+                   # InlineKeyboardButton('report a bug', callback_data='4'),
                     ]
 
     def _main_menu(self, update:Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
@@ -81,9 +81,9 @@ class Menu:
             not_in_auto = True
             if not_in_auto:
                 return 'Wat is je rol in de auto?',\
-                       [InlineKeyboardButton('bestuurder', callback_data='m_1'),
-                        InlineKeyboardButton('navigator', callback_data='m_2'),
-                        InlineKeyboardButton('bijrijders', callback_data='m_3')
+                       [InlineKeyboardButton('bestuurder', callback_data='bestuurder'),
+                        InlineKeyboardButton('navigator', callback_data='navigator'),
+                        InlineKeyboardButton('bijrijder', callback_data='bijrijder')
                         ]
             else:
                 bestuurder = False
@@ -136,9 +136,46 @@ class Menu:
             return 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
                    'main_menu, ' + str(callback_query), []
 
+    def _auto_menu_place_bestuurder(self, update: Update, callback_query: str, rp_acc) -> Tuple[str, List[InlineKeyboardButton]]:
+        api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+        api.place_in_car(rp_acc['id'], rp_acc['gebruikersnaam'], rp_acc['gebruikersnaam'], str('bestuurder;') + str(callback_query))
+        return 'de auto is aangemaakt. nu kun je ook andere mensen bij je in de auto laten stappen.', []
+
+    def _auto_menu_place_ander(self, update: Update, callback_query: str, rp_acc) -> Tuple[str, List[InlineKeyboardButton]]:
+        api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+        api.place_in_car(rp_acc['id'], rp_acc['gebruikersnaam'], self.path[-1], self.path[-2])
+        return 'Je zit nu in de auto van: ' + str(callback_query), []
+
     def _auto_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
-        # todo implement this
-        return 'Niet geimplenteerd', []
+        if callback_query == 'bestuurder':
+            self._get_next_buttons = self._auto_menu_place_bestuurder
+            buttons = [
+                InlineKeyboardButton('Alpha', callback_data='A'),
+                InlineKeyboardButton('Bravo', callback_data='B'),
+                InlineKeyboardButton('Charlie', callback_data='C'),
+                InlineKeyboardButton('Delta', callback_data='D'),
+                InlineKeyboardButton('Echo', callback_data='E'),
+                InlineKeyboardButton('Foxtrot', callback_data='F'),
+                InlineKeyboardButton('X-Ray', callback_data='X'),
+                InlineKeyboardButton('foto', callback_data='foto'),
+                InlineKeyboardButton('normale opdrachten', callback_data='opdracht'),
+                InlineKeyboardButton('terug naar hb', callback_data='hb'),
+            ]
+            message = 'Naar welk deelgebied ga je rijden?/wat ga je doen?'
+        elif callback_query in ('navigator', 'bijrijder'):
+            self._get_next_buttons = self._auto_menu_place_ander
+            api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+            buttons = []
+            for auto_owner in (kv["autoEigenaar"] for kv in api.get_car_names()):
+                buttons.append(InlineKeyboardButton(auto_owner, callback_data=auto_owner)) #todo ik vond dit eng gezien er op de callback_data een max zit
+            message = 'Wie is de bestuurder van de auto?\n' \
+                      'Als de bestuurder niet in deze lijst staat ga dan terug naar het hoofdmenu.' \
+                      ' Laat de bestuurder via telgram in een auto stappen.' \
+                      'En probeer het daarna opnieuw. '
+        else:
+            return 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
+                   'auto_menu, ' + str(callback_query), []
+        return message, buttons
 
     def _updates_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         message = ''
