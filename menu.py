@@ -403,29 +403,31 @@ def start(bot: Bot, update: Update):
 
 
 def handle_callback(bot, update):
-    with menus_lock:
-        if update.effective_chat.id not in menus:
-            menus[update.effective_chat.id] = Menu()
-        else:
-            # todo remove old keyboard and replace with the new one?
-            pass
-        menu = menus[update.effective_chat.id]
-    query: CallbackQuery = update.callback_query
-    api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
-    response = api.get_telegram_link(update.effective_user.id)
-    rp_acc = response.data
     try:
-        message, buttons = menu.get_next_buttons(update, query.data, rp_acc)
-    except OldMenuException as e:
-        _, buttons = menu.get_next_buttons(update, '0', rp_acc)
-        message = 'Je gebruikt een oud menu. Terug naar het hoofdmenu.'
-    keyboard = [[button] for button in buttons]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    bot.edit_message_text(text=message+'.',
-                          reply_markup=reply_markup,
-                          chat_id=query.message.chat_id,
-                          message_id=query.message.message_id)
-
+        with menus_lock:
+            if update.effective_chat.id not in menus:
+                menus[update.effective_chat.id] = Menu()
+            else:
+                # todo remove old keyboard and replace with the new one?
+                pass
+            menu = menus[update.effective_chat.id]
+        query: CallbackQuery = update.callback_query
+        api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+        response = api.get_telegram_link(update.effective_user.id)
+        rp_acc = response.data
+        try:
+            message, buttons = menu.get_next_buttons(update, query.data, rp_acc)
+        except OldMenuException as e:
+            _, buttons = menu.get_next_buttons(update, '0', rp_acc)
+            message = 'Je gebruikt een oud menu. Terug naar het hoofdmenu.'
+        keyboard = [[button] for button in buttons]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        bot.edit_message_text(text=message+'.',
+                              reply_markup=reply_markup,
+                              chat_id=query.message.chat_id,
+                              message_id=query.message.message_id)
+    except Exception as e:
+        error_callback(bot, update, e)
 
 def location_handler(bot, update):
     api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
