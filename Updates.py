@@ -272,9 +272,22 @@ class MyUpdates:
                 self._X = SingleUpdateContainer([updater_rp, updater_status])
 
         self._photos = set()  # naam niet veranderen
-        get_last_opdracht = lambda: jotihuntApi.get_opdrachten().data[0]
-        get_last_nieuws = lambda: jotihuntApi.get_nieuws_lijst().data[0]
-        get_last_hint = lambda: jotihuntApi.get_hints().data[0]
+
+        def get_last_opdracht():
+            opdrachten = jotihuntApi.get_opdrachten().data
+            if opdrachten:
+                return opdrachten[0]
+
+        def get_last_nieuws():
+            nieuws = jotihuntApi.get_nieuws_lijst().data
+            if nieuws:
+                return nieuws[0]
+
+        def get_last_hint():
+            hints = jotihuntApi.get_hints().data
+            if hints:
+                return hints[0]
+
         self.botan_id_jotihunt = 'new_{botan_soort}'
 
         def get_jotihunt_kwargs(new_response):

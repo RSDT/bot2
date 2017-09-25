@@ -429,6 +429,7 @@ def handle_callback(bot, update):
     except Exception as e:
         error_callback(bot, update, e)
 
+
 def location_handler(bot, update):
     api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
     response = api.get_telegram_link(update.effective_user.id)
@@ -499,6 +500,7 @@ def save(bot, update):
     updates: Updates = Updates.get_updates()
     updates.save()
     updates.send_message(update.effective_chat.id, 'huidige staat opgeslagen')
+
 
 def restart(bot, update):
     api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
