@@ -539,6 +539,13 @@ def error_callback(bot, update, error):
     updates.error(error, 'error_callback',
                   (type_, value_, traceback_))
 
+
+def help(bot, update):
+    bot.send_message(update.effective_chat.id, "Deze bot kan gebruikt worden om jezelf in een auto te plaatsen, "
+                                               "berichten van de jotihunt site binnen te krijgen via telegram of om"
+                                               "een bericht te krijgen als een nieuw coordinaat op de website is geplaatst."
+                                               "Om deze bot te gebruiken type /start in een prive chat."
+                                               "Mocht de bot niet meer reageren stuur dan een bericht naar t.me/njittam")
 def create_updater():
     updater = Updater(token=settings.Settings().bot_key)
     dp = updater.dispatcher
