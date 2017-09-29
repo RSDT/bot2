@@ -552,6 +552,7 @@ def create_updater():
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(CommandHandler('restart', restart))
     dp.add_handler(CommandHandler('save', save))
+    dp.add_handler(CommandHandler('help', save))
     dp.add_handler(CommandHandler('stop', stop(updater)))
     dp.add_handler(CallbackQueryHandler(handle_callback))
     dp.add_handler(MessageHandler(Filters.location, location_handler))
