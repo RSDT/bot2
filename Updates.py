@@ -734,7 +734,7 @@ class SingleUpdater:
     def update(self):
         new_item = self.get_item_callback()
         if new_item is None:
-            return 
+            return
         if self.only_last:
             is_new = self.lastSeen != new_item
         else:
