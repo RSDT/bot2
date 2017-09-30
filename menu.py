@@ -41,7 +41,8 @@ class Menu:
                    "aanstaan in deze chat", \
                    [InlineKeyboardButton("open prive chat",  url="http://telegram.me/JotiHuntRP2_bot",
                                          callback_data='0'),
-                    InlineKeyboardButton('check updates', callback_data='1')]
+                    # InlineKeyboardButton('check updates', callback_data='1')
+                    ]
             else:
                 l = lambda message, buttons: (message, [InlineKeyboardButton('terug naar hoofdmenu', callback_data='0')])
                 return l(*self._updates_menu(update, '1', rp_acc))
@@ -79,7 +80,10 @@ class Menu:
     def _main_menu(self, update:Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
         if callback_query == '1':
             self._get_next_buttons = self._auto_menu
-            not_in_auto = True
+            rp_id = rp_acc['id']
+            api = RpApi(settings.Settings().rp_username,settings.Settings().rp_pass)
+            response = api.get_car_info(rp_id)
+            not_in_auto = response.data is None
             if not_in_auto:
                 return 'Wat is je rol in de auto?',\
                        [InlineKeyboardButton('bestuurder', callback_data='bestuurder'),
@@ -87,15 +91,18 @@ class Menu:
                         InlineKeyboardButton('bijrijder', callback_data='bijrijder')
                         ]
             else:
-                bestuurder = False
-                navigator = True
+                rol: str = response.data['rol']
+                bestuurder = 'bestuurder' in rol
+                auto_response = api.get_car_by_name(response.data['autoEigenaar'])
+                personen = ''
+                for info in auto_response.data:
+                    personen += info['gebruikersNaam']
                 if not bestuurder:
-                    buttons = [InlineKeyboardButton('stap uit auto', callback_data='b_4')]
+                    buttons = [InlineKeyboardButton('stap uit auto', callback_data='stap_uit')]
                 else:
-                    buttons = [InlineKeyboardButton('stap uit auto en verwijder de auto uit de db')]
-                if bestuurder or navigator:
-                    buttons.append(InlineKeyboardButton('verander de taak', callback_data='b_5'))
-                return 'je zit al in een auto, wat wil je down?', buttons
+                    buttons = [InlineKeyboardButton('stap uit auto en verwijder de auto uit de db', callback_data='stap_uit')]
+                return 'Je zit al in een auto. Je huidige rol is '+str(rol)+'. Wil je uit een auto stappen?\n' \
+                                                                            'Je zit in de auto met:\n' + str(personen), buttons
 
         elif callback_query == '2':
             self._get_next_buttons = self._updates_menu
@@ -148,6 +155,7 @@ class Menu:
         return 'Je zit nu in de auto van: ' + str(callback_query), []
 
     def _auto_menu(self, update: Update, callback_query: str, rp_acc)->Tuple[str, List[InlineKeyboardButton]]:
+        api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
         if callback_query == 'bestuurder':
             self._get_next_buttons = self._auto_menu_place_bestuurder
             buttons = [
@@ -165,7 +173,7 @@ class Menu:
             message = 'Naar welk deelgebied ga je rijden?/wat ga je doen?'
         elif callback_query in ('navigator', 'bijrijder'):
             self._get_next_buttons = self._auto_menu_place_ander
-            api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+
             buttons = []
             for auto_owner in (kv["autoEigenaar"] for kv in api.get_car_names()):
                 buttons.append(InlineKeyboardButton(auto_owner, callback_data=auto_owner)) #todo ik vond dit eng gezien er op de callback_data een max zit
@@ -173,6 +181,9 @@ class Menu:
                       'Als de bestuurder niet in deze lijst staat ga dan terug naar het hoofdmenu.' \
                       ' Laat de bestuurder via telgram in een auto stappen.' \
                       'En probeer het daarna opnieuw. '
+        elif callback_query in ('stap_uit'):
+            api.remove_car_by_id(rp_acc['id'])
+            return 'je bent uit de auto gestapt. En als je de bestuurder was de rest ook.', []
         else:
             return 'error, waarschijnlijk heb je meerdere knoppen in het zelfde menu ingedrukt.\n' \
                    'auto_menu, ' + str(callback_query), []
@@ -530,7 +541,6 @@ def restart(bot, update):
 
 
 def error_callback(bot, update, error):
-    updates = Updates.get_updates()
     type_, value_, traceback_ = sys.exc_info()
     print(traceback_)
     print(str(error))
@@ -543,9 +553,10 @@ def error_callback(bot, update, error):
 def help(bot, update):
     bot.send_message(update.effective_chat.id, "Deze bot kan gebruikt worden om jezelf in een auto te plaatsen, "
                                                "berichten van de jotihunt site binnen te krijgen via telegram of om"
-                                               "een bericht te krijgen als een nieuw coordinaat op de website is geplaatst."
-                                               "Om deze bot te gebruiken type /start in een prive chat."
+                                               "een bericht te krijgen als een nieuw coordinaat op de website is geplaatst. "
+                                               "Om deze bot te gebruiken type /start in een prive chat. "
                                                "Mocht de bot niet meer reageren stuur dan een bericht naar t.me/njittam")
+
 def create_updater():
     updater = Updater(token=settings.Settings().bot_key)
     dp = updater.dispatcher

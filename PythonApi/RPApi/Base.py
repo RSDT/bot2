@@ -9,7 +9,10 @@ from hashlib import sha1
 import json
 import time
 
-VOS, META, SC_ALL, FOTO_ALL, GEBRUIKER_INFO, TELEGRAM_LINK, CAR_ALL = range(7)
+VOS, META, SC_ALL,\
+FOTO_ALL, GEBRUIKER_INFO, TELEGRAM_LINK,\
+CAR_ALL, CAR_NAMES, CAR_SINGLE,\
+    CAR_INFO, CAR_DELETE = range(9)
 
 
 def parse_time(tijd):
@@ -356,7 +359,7 @@ class Api:
             data = self._send_request(root, functie)
         except NoDataError as e:
             data = []
-        return Response(data, CAR_ALL)
+        return Response(data, CAR_NAMES)
 
     @t_safe()
     def get_car_all(self):
@@ -367,6 +370,37 @@ class Api:
         except NoDataError as e:
             data = []
         return Response(data, CAR_ALL)
+
+    @t_safe()
+    def get_car_by_name(self, name):
+        root = 'car'
+        functie = 'onecar/' + str(name)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = []
+        return Response(data, CAR_SINGLE)
+
+    @t_safe()
+    def get_car_info(self, id):
+        root = 'car'
+        functie = 'info/' + str(id)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            data = None
+        return Response(data, CAR_INFO)
+
+    @t_safe()
+    def remove_car_by_id(self, id):
+        root = 'car'
+        functie = 'removefromcarbyid/' + str(id)
+        try:
+            data = self._send_request(root, functie)
+        except NoDataError as e:
+            return False
+        return Response(data['verwijderd'],CAR_DELETE)
+
 
 
 class Response:
