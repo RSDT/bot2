@@ -12,7 +12,7 @@ import time
 VOS, META, SC_ALL,\
 FOTO_ALL, GEBRUIKER_INFO, TELEGRAM_LINK,\
 CAR_ALL, CAR_NAMES, CAR_SINGLE,\
-    CAR_INFO, CAR_DELETE = range(9)
+    CAR_INFO, CAR_DELETE = range(11)
 
 
 def parse_time(tijd):
