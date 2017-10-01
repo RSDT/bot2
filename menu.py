@@ -34,30 +34,36 @@ class Menu:
         self.path = []
 
     def get_next_buttons(self, update: Update, callback_query: str='0', rp_acc: Union[None, Dict]=None):
-        chat_id: Message = update.effective_chat.id
-        if chat_id < 0:
+        try:
+            chat_id: Message = update.effective_chat.id
+            if chat_id < 0:
+                if callback_query == '0':
+                    return "deze chat kan alleen gebruikt worden in prive chats of om te controleren waar updates voor " \
+                       "aanstaan in deze chat", \
+                       [InlineKeyboardButton("open prive chat",  url="http://telegram.me/JotiHuntRP2_bot",
+                                             callback_data='0'),
+                        # InlineKeyboardButton('check updates', callback_data='1')
+                        ]
+                else:
+                    l = lambda message, buttons: (message, [InlineKeyboardButton('terug naar hoofdmenu', callback_data='0')])
+                    return l(*self._updates_menu(update, '1', rp_acc))
+            if rp_acc is None:
+                return "Dit account is nog niet gelinked aan de RP database. " \
+                       "Vraag aan de HB om dit te doen en klik daarna op start.", \
+                       [InlineKeyboardButton('start', callback_data='0')]
+            self.path.append(callback_query)
             if callback_query == '0':
-                return "deze chat kan alleen gebruikt worden in prive chats of om te controleren waar updates voor " \
-                   "aanstaan in deze chat", \
-                   [InlineKeyboardButton("open prive chat",  url="http://telegram.me/JotiHuntRP2_bot",
-                                         callback_data='0'),
-                    # InlineKeyboardButton('check updates', callback_data='1')
-                    ]
-            else:
-                l = lambda message, buttons: (message, [InlineKeyboardButton('terug naar hoofdmenu', callback_data='0')])
-                return l(*self._updates_menu(update, '1', rp_acc))
-        if rp_acc is None:
-            return "Dit account is nog niet gelinked aan de RP database. " \
-                   "Vraag aan de HB om dit te doen en klik daarna op start.", \
-                   [InlineKeyboardButton('start', callback_data='0')]
-        self.path.append(callback_query)
-        if callback_query == '0':
-            self._get_next_buttons = self._set_up
-            self.path.clear()
-        text, buttons = self._get_next_buttons(update, callback_query, rp_acc)
-        if callback_query != '0':
-            buttons.append(InlineKeyboardButton('terug naar hoofdmenu', callback_data='0'))
-        return text, buttons
+                self._get_next_buttons = self._set_up
+                self.path.clear()
+            text, buttons = self._get_next_buttons(update, callback_query, rp_acc)
+            if callback_query != '0':
+                buttons.append(InlineKeyboardButton('terug naar hoofdmenu', callback_data='0'))
+            return text, buttons
+        except Exception as e:
+            updates = Updates.get_updates()
+            updates.error(e, 'get_next buttons', None)
+            return 'Er is een Error opgetreden:' + str(e),\
+                   [InlineKeyboardButton('terug naar hoofdmenu', callback_data='0')]
 
     def _set_up(self, update: Update, callback_query: str, rp_acc: Dict) -> Tuple[str, List[InlineKeyboardButton]]:
         if callback_query != '0':
@@ -81,7 +87,7 @@ class Menu:
         if callback_query == '1':
             self._get_next_buttons = self._auto_menu
             rp_id = rp_acc['id']
-            api = RpApi.get_instance(settings.Settings().rp_username,settings.Settings().rp_pass)
+            api = RpApi(settings.Settings().rp_username,settings.Settings().rp_pass)
             response = api.get_car_info(rp_id)
             not_in_auto = response.data is None
             if not_in_auto:
