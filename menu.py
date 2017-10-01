@@ -87,9 +87,9 @@ class Menu:
         if callback_query == '1':
             self._get_next_buttons = self._auto_menu
             rp_id = rp_acc['id']
-            api = RpApi.get_instance(settings.Settings().rp_username,settings.Settings().rp_pass)
-            response = api.get_car_info(rp_id)
-            not_in_auto = response.data is None
+            api = RpApi.get_instance(settings.Settings().rp_username, settings.Settings().rp_pass)
+            #response = api.get_car_info(rp_id)
+            not_in_auto = True
             if not_in_auto:
                 return 'Wat is je rol in de auto?',\
                        [InlineKeyboardButton('bestuurder', callback_data='bestuurder'),
