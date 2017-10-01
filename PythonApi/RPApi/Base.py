@@ -343,7 +343,7 @@ class Api:
 
     @t_safe()
     def place_in_car(self, user_id, username, car_owner, role):
-        root = 'car'
+        root = 'auto'
         data = {'SLEUTEL': self.api_key,
                 'gebruikersID': user_id,
                 'gebruikersNaam': username,
@@ -353,7 +353,7 @@ class Api:
 
     @t_safe()
     def get_car_names(self):
-        root = 'car'
+        root = 'auto'
         functie = 'distinct'
         try:
             data = self._send_request(root, functie)
@@ -363,7 +363,7 @@ class Api:
 
     @t_safe()
     def get_car_all(self):
-        root = 'car'
+        root = 'auto'
         functie = 'distinct/all'
         try:
             data = self._send_request(root, functie)
