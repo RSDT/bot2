@@ -31,15 +31,6 @@ def _retry_with_new_key_on_error(func):
     return decorate
 
 
-def t_safe():
-    def decorate(func):
-        def call(self, *args, **kwargs):
-            with self.lock:
-                return func(self, *args, **kwargs)
-        return call
-    return decorate
-
-
 class Api:
     instances = dict()
     instances_lock = threading.Lock()
@@ -116,7 +107,6 @@ class Api:
     _send_request_b = _send_request
     _send_request = _retry_with_new_key_on_error(_send_request_b)
 
-    @t_safe()
     def hunter_namen(self):
         root = 'hunter'
         functie = 'hunter_namen/'
@@ -126,7 +116,6 @@ class Api:
             data = []
         return data
 
-    @t_safe()
     def hunter_all(self, tijd=None):
         root = 'hunter'
         functie = 'all/'
@@ -138,7 +127,6 @@ class Api:
             data = {}
         return data
 
-    @t_safe()
     def hunter_tail(self, hunter, tijd=None):
         root = 'hunter'
         functie = 'naam/tail/' + str(hunter) + '/'
@@ -278,13 +266,11 @@ class Api:
             response = self._send_request(root, data=data)
             sleutel = response['SLEUTEL']
             self.api_key = sleutel
-            import settings
-            settings = settings.Settings
-            settings.SLEUTEL = sleutel
+
         finally:
             self.api_key_lock.release()
 
-    @t_safe()
+
     def send_telegram_user(self, telegramID, telegramVoornaam, telegramAchternaam='onbekend', telegramGebruikersnaam='onbekend'):
         data = {"SLEUTEL": self.api_key,
             "telegramID": telegramID,
@@ -301,7 +287,7 @@ class Api:
         except Exception as e:
             raise e
 
-    @t_safe()
+
     def send_hunter_location(self, lat, lon, icon=0, hunternaam=None):
         if hunternaam is None:
             if self.hunternaam is None:
@@ -317,7 +303,7 @@ class Api:
         root = 'hunter'
         self._send_request(root, data=data)
 
-    @t_safe()
+
     def send_vos_location(self, team, lat, lon, icon=0, info='-'):
         if self.hunternaam is None:
             hunternaam = self.username
@@ -331,7 +317,7 @@ class Api:
                 'longitude': str(lon), 'icon': str(icon), 'info': str(info)}
         self._send_request(root, data=data)
 
-    @t_safe()
+
     def get_telegram_link(self, telegram_id):
         root = 'telegram'
         functie = str(telegram_id) + '/'
@@ -341,7 +327,7 @@ class Api:
             data = None
         return Response(data, TELEGRAM_LINK)
 
-    @t_safe()
+
     def place_in_car(self, user_id, username, car_owner, role):
         root = 'auto'
         data = {'SLEUTEL': self.api_key,
@@ -351,7 +337,7 @@ class Api:
                 'rol': role}
         self._send_request(root, data=data)
 
-    @t_safe()
+
     def get_car_names(self):
         root = 'auto'
         functie = 'distinct'
@@ -361,7 +347,7 @@ class Api:
             data = []
         return Response(data, CAR_NAMES)
 
-    @t_safe()
+
     def get_car_all(self):
         root = 'auto'
         functie = 'distinct/all'
@@ -371,7 +357,7 @@ class Api:
             data = []
         return Response(data, CAR_ALL)
 
-    @t_safe()
+
     def get_car_by_name(self, name):
         root = 'car'
         functie = 'onecar/' + str(name)
@@ -381,7 +367,7 @@ class Api:
             data = []
         return Response(data, CAR_SINGLE)
 
-    @t_safe()
+
     def get_car_info(self, id):
         root = 'car'
         functie = 'info/' + str(id)
@@ -391,7 +377,7 @@ class Api:
             data = None
         return Response(data, CAR_INFO)
 
-    @t_safe()
+
     def remove_car_by_id(self, id):
         root = 'car'
         functie = 'removefromcarbyid/' + str(id)
