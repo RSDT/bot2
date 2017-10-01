@@ -84,10 +84,10 @@ class Api:
                 self.last_update = time.time()
             if data is None:
                 url = self._base_url + root + '/' + self.api_key + '/' + functie
-                r = requests.get(url)
+                r = requests.get(url, timeout=10)
             else:
                 url = self._base_url + root + '/' + functie
-                r = requests.post(url, data=json.dumps(data))
+                r = requests.post(url, data=json.dumps(data), timeout=10)
             if r.status_code == 401:
                 raise VerificationError(r.content)
             elif r.status_code == 403:
@@ -97,7 +97,10 @@ class Api:
             elif r.status_code == 418:
                 raise IAmATheaPotError(r.content)
             elif r.status_code == 200:
-                r_val = r.json()
+                try:
+                    r_val = r.json()
+                except JSONDecodeError as e:
+                    r_val = None
             else:
                 raise UndocumatedStatusCodeError((r.status_code, r.content))
         finally:
