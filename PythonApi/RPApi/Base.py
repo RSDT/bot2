@@ -141,7 +141,6 @@ class Api:
             data = {}
         return data
 
-    @t_safe()
     def hunter_andere(self, hunter, tijd=None):
         root = 'hunter'
         functie = 'andere/' + str(hunter) + '/'
@@ -153,7 +152,6 @@ class Api:
             data = {}
         return data
 
-    @t_safe()
     def hunter_single_location(self, hunter_id):
         root = 'hunter'
         functie = str(hunter_id) + '/'
@@ -163,7 +161,6 @@ class Api:
             data = {}
         return data
 
-    @t_safe()
     def vos(self, team, tijd=None, vos_id=None):
         t = None
         if vos_id is None and tijd is None:
@@ -214,7 +211,6 @@ class Api:
             data = []
         return data
 
-    @t_safe()
     def meta(self):
         root = 'meta'
         functie = ''
@@ -224,7 +220,6 @@ class Api:
             data = {}
         return Response(data, META)
 
-    @t_safe()
     def sc_all(self):
         root = 'sc'
         functie = 'all/'
@@ -234,7 +229,6 @@ class Api:
             data = []
         return Response(data, SC_ALL)
 
-    @t_safe()
     def foto_all(self):
         root = 'foto'
         functie = 'all/'
@@ -244,7 +238,6 @@ class Api:
             data = []
         return Response(data, FOTO_ALL)
 
-    @t_safe()
     def gebruiker_info(self):
         root = 'gebruiker'
         functie = 'info/'
@@ -254,7 +247,6 @@ class Api:
             data = {}
         return Response(data, GEBRUIKER_INFO)
 
-    @t_safe()
     def login(self):
         if self.last_update is not None and \
                                 time.time() - self.last_update < \
